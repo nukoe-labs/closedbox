@@ -82,14 +82,15 @@ async function runsAFullSession(): Promise<void> {
   const interactive = runner.calls.find(isAgentRun);
   expect(interactive?.argumentsList.join(" ")).not.toContain("REAL");
   expect(interactive?.environment?.ANTHROPIC_API_KEY).toMatch(/^sk-ant-api03-/u);
-  expect(interactive?.environment?.ANTHROPIC_API_KEY).toContain("stillsuit-placeholder");
+  expect(interactive?.environment?.ANTHROPIC_API_KEY).toContain("closedbox-placeholder");
   expect(interactive?.argumentsList).toEqual(expect.arrayContaining(["--model", "x", "type=bind,source=/dev/null,target=/workspace/.env,readonly"]));
   const proxyRun = runner.calls.find(isProxyRun);
   expect(proxyRun?.environment?.ANTHROPIC_API_KEY).toBe("sk-ant-api03-REAL");
-  expect(JSON.parse(proxyRun?.environment?.STILLSUIT_PROXY_CONFIG ?? "{}").certificates["api.anthropic.com"].cert).toContain("BEGIN CERTIFICATE");
+  expect(JSON.parse(proxyRun?.environment?.CLOSEDBOX_PROXY_CONFIG ?? "{}").certificates["api.anthropic.com"].cert).toContain("BEGIN CERTIFICATE");
   expect(listCalls(runner, "run")).toContainEqual(expect.arrayContaining(["network", "rm"]));
   expect(runner.streams[1]?.sent).toEqual(["41000"]);
   expect(context.written.join("\n")).toContain("blocked 1 website(s): evil.example");
+  expect(context.written.join("\n")).not.toContain("--allow evil.example");
   const latest = readFileSync(join(context.paths.state, "latest"), "utf8");
   expect(readFileSync(latest, "utf8")).toContain("BLOCKED  evil.example:443  (by node scripts/setup.js)");
 }
@@ -117,10 +118,10 @@ async function writesTheAuditAllowlist(): Promise<void> {
   const runner = createEngineRunner({}, [READY, AUDIT_LINE]);
   const context = createContext(runner, {}, false);
   await launch(context, createOptions(project, { mode: "audit", agent: "shell", argumentsList: [] }));
-  const audit = readFileSync(join(project, "stillsuit.audit.toml"), "utf8");
+  const audit = readFileSync(join(project, "closedbox.audit.toml"), "utf8");
   expect(audit).toContain('"cdn.example"');
   expect(context.written.join("\n")).toContain("websites:  all allowed for this run, and written down (audit)");
-  expect(context.written.join("\n")).toContain("then rename the file stillsuit.toml");
+  expect(context.written.join("\n")).toContain("then rename the file closedbox.toml");
   expect(context.written).toContain("allowed  cdn.example:443  [audit: not in the allowlist]\r");
 }
 
@@ -136,17 +137,17 @@ async function refusesATrappedProject(): Promise<void> {
   expect(context.written.join("\n")).toContain("the assistant was not started");
   await expect(launch(context, createOptions(project, { scan: false }))).resolves.toBe(0);
   const quietProject = makeTemporaryFolder("project");
-  writeFileSync(join(quietProject, "stillsuit.toml"), "[scan]\nwormsign = false\n");
+  writeFileSync(join(quietProject, "closedbox.toml"), "[scan]\nwormsign = false\n");
   trustConfig(join(context.paths.config, "trusted.json"), quietProject, "[scan]\nwormsign = false\n");
   await expect(launch(context, createOptions(quietProject))).resolves.toBe(0);
 }
 
-/** Checks that a new or changed stillsuit.toml is refused until approved. */
+/** Checks that a new or changed closedbox.toml is refused until approved. */
 async function refusesAnUnapprovedConfig(): Promise<void> {
   const project = makeTemporaryFolder("project");
-  writeFileSync(join(project, "stillsuit.toml"), '[network]\nallow = ["evil.example"]\n');
+  writeFileSync(join(project, "closedbox.toml"), '[network]\nallow = ["evil.example"]\n');
   const context = createContext(createEngineRunner({}, [READY]), {});
-  await expect(launch(context, createOptions(project))).rejects.toThrow("stillsuit trust");
+  await expect(launch(context, createOptions(project))).rejects.toThrow("closedbox trust");
 }
 
 /** Checks that a failed start still removes what was created. */
@@ -157,7 +158,7 @@ async function cleansUpAfterAFailedStart(): Promise<void> {
   expect(listCalls(runner, "run")).toContainEqual(expect.arrayContaining(["network", "rm"]));
 }
 
-/** Checks that stillsuit gives up when the proxy never says it is ready. */
+/** Checks that closedbox gives up when the proxy never says it is ready. */
 async function givesUpWhenTheProxyNeverStarts(): Promise<void> {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   const project = makeTemporaryFolder("project");
@@ -199,19 +200,19 @@ function createPlan(overrides: Partial<SessionPlan>): SessionPlan {
 function buildsHardenedArguments(): void {
   const masks = [{ path: ".aws", isFolder: true }, { path: "a,b.pem", isFolder: false }];
   const agent = buildAgentArguments(createPlan({ masks, useTerminal: true }));
-  expect(agent).toEqual(expect.arrayContaining(["-it", "--network", "stillsuit-net-abcd", "--dns", "192.0.2.1", "--cap-drop", "ALL", "no-new-privileges", "type=tmpfs,destination=/workspace/.aws,tmpfs-size=1m", "home:/home/node", "1001:121"]));
+  expect(agent).toEqual(expect.arrayContaining(["-it", "--network", "closedbox-net-abcd", "--dns", "192.0.2.1", "--cap-drop", "ALL", "no-new-privileges", "type=tmpfs,destination=/workspace/.aws,tmpfs-size=1m", "home:/home/node", "1001:121"]));
   expect(agent.join(" ")).not.toContain("a,b.pem");
   expect(agent).not.toContain("ph");
   expect(isMountablePath({ path: 'x"y', isFolder: false })).toBe(false);
-  expect(buildAgentEnvironment(createPlan({})).HTTPS_PROXY).toBe("http://stillsuit-proxy:3128");
-  expect(buildProxyArguments(createPlan({}))).toEqual(expect.arrayContaining(["-e", "ANTHROPIC_API_KEY", "--read-only", "/pkg:/opt/stillsuit:ro"]));
+  expect(buildAgentEnvironment(createPlan({})).HTTPS_PROXY).toBe("http://closedbox-proxy:3128");
+  expect(buildProxyArguments(createPlan({}))).toEqual(expect.arrayContaining(["-e", "ANTHROPIC_API_KEY", "--read-only", "/pkg:/opt/closedbox:ro"]));
   expect(JSON.parse(buildProxyConfiguration(createPlan({}), "audit", {})).policy).toMatchObject({ mode: "audit", allowPrivate: false });
 }
 
 /** Checks the small helpers of the session. */
 function buildsPlaceholdersNamesAndCommands(): void {
-  expect(makePlaceholder("sk-ant-oat01-secret")).toMatch(/^sk-ant-oat01-stillsuit/u);
-  expect(makePlaceholder("other")).toMatch(/^stillsuit-placeholder/u);
+  expect(makePlaceholder("sk-ant-oat01-secret")).toMatch(/^sk-ant-oat01-closedbox/u);
+  expect(makePlaceholder("other")).toMatch(/^closedbox-placeholder/u);
   expect(homeVolumeName("claude", "/a")).not.toBe(homeVolumeName("claude", "/b"));
   expect(chooseCommand("claude", ["-p"])).toEqual({ command: "claude", argumentsList: ["-p"] });
   expect(chooseCommand("", ["node", "x.js"])).toEqual({ command: "node", argumentsList: ["x.js"] });

@@ -4,10 +4,10 @@ Measured on 2026-11-20. Stars come from the GitHub API on that day. "Gap" lists 
 open an untrusted repository with Claude Code or Codex, without letting a hook, a postinstall script or a prompt
 injection read your keys or send them anywhere.
 
-The bar stillsuit sets for itself:
+The bar closedbox sets for itself:
 
-1. **One command**, nothing to write first: `npx stillsuit claude`.
-2. **Any agent**: Claude Code, Codex, or any command (`stillsuit shell -- ...`).
+1. **One command**, nothing to write first: `npx closedbox claude`.
+2. **Any agent**: Claude Code, Codex, or any command (`closedbox shell -- ...`).
 3. **Network denied by default**, with an allowlist a person can read in ten seconds.
 4. **Secrets never mounted**: API keys are injected by a proxy, only towards their own host; the agent sees a placeholder.
 5. **A journal of every refused connection**, with the process that asked for it.
@@ -42,10 +42,10 @@ The bar stillsuit sets for itself:
 | [pipelab-org/pipelock](https://github.com/pipelab-org/pipelock) | 1,010 | Egress proxy with DLP scanning, SSRF protection and MCP response scanning | An egress layer to wire around your own agent setup, not a launcher that confines the agent |
 | [textcortex/claude-code-sandbox](https://github.com/textcortex/claude-code-sandbox) | 324 (archived) | Claude Code in Docker containers | Archived |
 
-## Where stillsuit stands
+## Where closedbox stands
 
 Each piece exists somewhere: nono and OneCLI keep keys out of the agent, the Claude Code devcontainer and claudebox
-filter egress, coop and microsandbox isolate harder with microVMs. What stillsuit adds is the combination, in one
+filter egress, coop and microsandbox isolate harder with microVMs. What closedbox adds is the combination, in one
 `npx` command, for any agent, with Docker or Podman:
 
 - **A container on a network with no route out**, whose only exit is an allowlist proxy, so a planted script cannot
@@ -54,19 +54,19 @@ filter egress, coop and microsandbox isolate harder with microVMs. What stillsui
   host, and removes any other credential header there, so a planted script cannot spend tokens on an attacker's
   account through an allowed host.
 - **A refusal journal that names the process**: "BLOCKED evil.example:443 (by node scripts/setup.js)".
-- **An allowlist written from what the project really needs**: `stillsuit audit claude` lets everything through once,
-  then writes `stillsuit.audit.toml` with the hosts seen.
-- **A repository's own configuration refused until approved**: a trapped repository can ship a `stillsuit.toml` that
-  allows its exfiltration host; stillsuit refuses any new or changed file until `stillsuit trust`.
-- **A scan before the first prompt**: SessionStart hooks run as soon as the agent opens the folder, so stillsuit runs
+- **An allowlist written from what the project really needs**: `closedbox audit claude` lets everything through once,
+  then writes `closedbox.audit.toml` with the hosts seen.
+- **A repository's own configuration refused until approved**: a trapped repository can ship a `closedbox.toml` that
+  allows its exfiltration host; closedbox refuses any new or changed file until `closedbox trust`.
+- **A scan before the first prompt**: SessionStart hooks run as soon as the agent opens the folder, so closedbox runs
   the wormsign rules on the folder first and does not start on a worm sign.
 - **Escape tests in CI**: 30 attempts against a real sandbox on every push.
 
-## Honest limits of stillsuit
+## Honest limits of closedbox
 
 - A container shares the host kernel. A kernel exploit escapes it; micro-VMs (E2B, microsandbox) do not have that risk.
 - An allowlist limits **where** data can go, not **what** is sent there. An allowed host that accepts uploads
   (a package registry with a token, GitHub with `github = true`) can still carry data out.
 - Requests to the hosts that receive a key are decrypted by the proxy with a local CA that only the agent image trusts.
-- Apple `container` is not supported yet: stillsuit needs an internal network with no route out, and uses Docker
+- Apple `container` is not supported yet: closedbox needs an internal network with no route out, and uses Docker
   (Docker Desktop, OrbStack, Colima, Rancher Desktop) or Podman.

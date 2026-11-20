@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-/** The approved stillsuit.toml files, by project folder, with the digest of the approved text. */
+/** The approved closedbox.toml files, by project folder, with the digest of the approved text. */
 type TrustStore = Record<string, string>;
 
 /** Computes the digest of a configuration text. */
@@ -19,7 +19,7 @@ function readStore(storePath: string): TrustStore {
 }
 
 /**
- * Tells whether this exact stillsuit.toml was approved for this project. A repository can ship its own stillsuit.toml
+ * Tells whether this exact closedbox.toml was approved for this project. A repository can ship its own closedbox.toml
  * to widen the allowlist, so a new or changed file is never used before the person approves it.
  */
 export function isTrusted(storePath: string, projectFolder: string, configText: string): boolean {
@@ -27,7 +27,7 @@ export function isTrusted(storePath: string, projectFolder: string, configText: 
   return store[projectFolder] === digestText(configText);
 }
 
-/** Records that the person approved this stillsuit.toml for this project. */
+/** Records that the person approved this closedbox.toml for this project. */
 export function trustConfig(storePath: string, projectFolder: string, configText: string): void {
   const store = readStore(storePath);
   store[projectFolder] = digestText(configText);

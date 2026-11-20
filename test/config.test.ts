@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_FILE_CONFIG, listAllowedHosts, readFileConfig, resolveSettings, writeConfigText } from "../src/config.js";
 import { getProfile, GITHUB_HOSTS, PROFILES } from "../src/profiles.js";
 
-/** Checks a complete stillsuit.toml. */
+/** Checks a complete closedbox.toml. */
 function readsACompleteFile(): void {
   const config = readFileConfig(`
 [network]

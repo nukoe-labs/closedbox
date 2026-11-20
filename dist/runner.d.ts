@@ -10,7 +10,7 @@ export interface LineStream {
     send: (line: string) => void;
     stop: () => void;
 }
-/** The way stillsuit starts other programs (docker, podman, openssl), replaceable in tests. */
+/** The way closedbox starts other programs (docker, podman, openssl), replaceable in tests. */
 export interface Runner {
     /** Runs a command to the end and returns its output. */
     run: (command: string, argumentsList: string[], environment?: NodeJS.ProcessEnv) => Promise<CommandResult>;

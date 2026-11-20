@@ -8,7 +8,7 @@ export interface SecretRule {
   template: string;
 }
 
-/** What stillsuit needs to start one agent. */
+/** What closedbox needs to start one agent. */
 export interface AgentProfile {
   /** The command started in the container; empty for the shell profile, which runs the command of the person. */
   command: string;

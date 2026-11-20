@@ -216,14 +216,14 @@ async function sendRawThroughTunnel(socket: import("node:net").Socket, raw: stri
 
 /** Checks that a client that left before the decision is still recorded with its port, and that a DNS failure is refused. */
 async function recordsAClientThatLeftEarly(): Promise<void> {
-  const proxy = await startProxy(makePolicy({ allow: [parseAllowRule("stillsuit-missing.invalid")] }));
+  const proxy = await startProxy(makePolicy({ allow: [parseAllowRule("closedbox-missing.invalid")] }));
   const socket = netConnect(proxy.port, "127.0.0.1");
   socket.on("error", ignoreError);
-  socket.end("CONNECT stillsuit-missing.invalid:443 HTTP/1.1\r\nHost: x\r\n\r\n");
+  socket.end("CONNECT closedbox-missing.invalid:443 HTTP/1.1\r\nHost: x\r\n\r\n");
   while (proxy.events.length === 0) {
     await new Promise(setImmediate);
   }
-  expect(proxy.events[0]).toMatchObject({ action: "blocked", host: "stillsuit-missing.invalid" });
+  expect(proxy.events[0]).toMatchObject({ action: "blocked", host: "closedbox-missing.invalid" });
   expect(proxy.events[0]?.sourcePort).toBeGreaterThan(0);
   proxy.server.close();
 }
@@ -294,7 +294,7 @@ async function startsFromTheContainerEntryPoint(): Promise<void> {
   const written: string[] = [];
   const spy = vi.spyOn(process.stdout, "write").mockImplementation(recordWrite.bind(undefined, written));
   const configuration = { policy: makePolicy({}), certificates: {} };
-  const server = startProxyMain({ STILLSUIT_PROXY_CONFIG: JSON.stringify(configuration), API_KEY: "v" }, 0);
+  const server = startProxyMain({ CLOSEDBOX_PROXY_CONFIG: JSON.stringify(configuration), API_KEY: "v" }, 0);
   await once(server, "listening");
   const port = (server.address() as AddressInfo).port;
   await sendConnect(port, "evil.example:443");

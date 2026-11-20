@@ -1,6 +1,6 @@
 import type { Server } from "node:http";
 import { type CertificatePair, type ProxyPolicy } from "./proxy.js";
-/** The configuration given to the proxy container in the STILLSUIT_PROXY_CONFIG variable. */
+/** The configuration given to the proxy container in the CLOSEDBOX_PROXY_CONFIG variable. */
 export interface ProxyConfiguration {
     policy: ProxyPolicy;
     certificates: Record<string, CertificatePair>;

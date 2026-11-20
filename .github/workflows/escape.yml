@@ -33,4 +33,4 @@ jobs:
         run: |
           bash demo/run-demo.sh 2>&1 | tee demo.log
           grep -q "WS001" demo.log
-          grep -q "BLOCKED  exfil.stillsuit-demo.example:443" demo.log
+          grep -q "BLOCKED  exfil.closedbox-demo.example:443" demo.log

@@ -21,7 +21,7 @@ export function writeDockerfile(agentPackages: string, user: HostUser): string {
   return `FROM ${AGENT_BASE_IMAGE}
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl python3 ripgrep procps dnsutils \\
  && rm -rf /var/lib/apt/lists/*
-${installAgents}${matchUser}COPY stillsuit-ca.crt /usr/local/share/ca-certificates/stillsuit.crt
+${installAgents}${matchUser}COPY closedbox-ca.crt /usr/local/share/ca-certificates/closedbox.crt
 RUN update-ca-certificates
 USER node
 WORKDIR /workspace
@@ -31,7 +31,7 @@ WORKDIR /workspace
 /** Names the image after its Dockerfile and its CA, so that a change of either builds a new image. */
 export function imageTag(dockerfile: string, caCertificate: string): string {
   const digest = createHash("sha256").update(dockerfile).update(caCertificate).digest("hex").slice(0, 12);
-  return `stillsuit-agent:${digest}`;
+  return `closedbox-agent:${digest}`;
 }
 
 /** Where and how the agent image is built. */
@@ -52,7 +52,7 @@ export async function ensureAgentImage(runner: Runner, runtime: string, build: I
   }
   mkdirSync(build.folder, { recursive: true });
   writeFileSync(join(build.folder, "Dockerfile"), dockerfile);
-  copyFileSync(build.caPath, join(build.folder, "stillsuit-ca.crt"));
+  copyFileSync(build.caPath, join(build.folder, "closedbox-ca.crt"));
   const code = await runner.interactive(runtime, ["build", "-t", tag, build.folder], process.env);
   if (code !== 0) {
     throw new Error(`The agent image could not be built (exit code ${code}).`);
