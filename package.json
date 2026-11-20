@@ -1,0 +1,59 @@
+{
+  "name": "stillsuit",
+  "version": "0.1.0",
+  "description": "Run Claude Code or Codex in a container with one command: deny-by-default network with a readable allowlist, API keys injected by a proxy and never seen by the agent, a live journal of every blocked connection, and a wormsign scan before start.",
+  "type": "module",
+  "bin": {
+    "stillsuit": "./dist/bin/stillsuit.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "escape-tests": "bash test/escape/run.sh",
+    "prepublishOnly": "npm run build",
+    "pack:check": "npm pack --dry-run"
+  },
+  "keywords": [
+    "sandbox",
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "ai-agents",
+    "docker",
+    "egress",
+    "allowlist",
+    "secrets",
+    "supply-chain-security",
+    "security"
+  ],
+  "author": "Mickael Saidi (https://nukoe.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nukoe-labs/stillsuit.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "wormsign": "https://codeload.github.com/nukoe-labs/wormsign/tar.gz/e30252567ffabbbba0e578fb221a6488c7c190a2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^4.1.12",
+    "eslint": "^10.15.0",
+    "globals": "^17.14.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^4.1.12"
+  }
+}
