@@ -24,7 +24,7 @@ export async function ensureCertificateAuthority(runner, folder) {
     if (existsSync(certificatePath) && existsSync(keyPath)) {
         return certificatePath;
     }
-    const subject = ["-subj", "/CN=stillsuit local CA (sandbox only)"];
+    const subject = ["-subj", "/CN=closedbox local CA (sandbox only)"];
     const extensions = ["-addext", "basicConstraints=critical,CA:TRUE", "-addext", "keyUsage=critical,keyCertSign,cRLSign"];
     await runOpenssl(runner, ["req", "-x509", "-sha256", ...EC_KEY, "-keyout", keyPath, "-out", certificatePath, "-days", "3650", ...subject, ...extensions]);
     chmodSync(keyPath, PRIVATE_FILE_MODE);

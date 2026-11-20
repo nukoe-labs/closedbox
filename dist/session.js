@@ -17,9 +17,9 @@ export const EXIT_WORM_FOUND = 3;
 export const EXIT_SETUP_FAILED = 2;
 /** How long a refused connection is held open, so that the journal can name the process. */
 export const DENY_DELAY_MS = 1500;
-/** How long stillsuit waits for the proxy to listen. */
+/** How long closedbox waits for the proxy to listen. */
 export const PROXY_START_TIMEOUT_MS = 20_000;
-/** Reads stillsuit.toml of the project, and refuses a file that the person has not approved. */
+/** Reads closedbox.toml of the project, and refuses a file that the person has not approved. */
 export function loadProjectConfig(context, projectFolder) {
     const configPath = join(projectFolder, CONFIG_FILE);
     if (!existsSync(configPath)) {
@@ -28,14 +28,14 @@ export function loadProjectConfig(context, projectFolder) {
     const text = readFileSync(configPath, "utf8");
     const config = readFileConfig(text);
     if (!isTrusted(join(context.paths.config, "trusted.json"), projectFolder, text)) {
-        throw new Error(`${CONFIG_FILE} is new or changed. A repository can ship one to widen the allowlist.\nRead it, then approve it with: stillsuit trust`);
+        throw new Error(`${CONFIG_FILE} is new or changed. A repository can ship one to widen the allowlist.\nRead it, then approve it with: closedbox trust`);
     }
     return config;
 }
 /** Builds the placeholder given to the agent in place of a secret: the public prefix of the key, then a fixed text. */
 export function makePlaceholder(value) {
     const prefix = /^(?:sk-ant-oat01-|sk-ant-api03-|sk-proj-|sk-|ghp_|github_pat_)/u.exec(value)?.[0] ?? "";
-    return `${prefix}stillsuit-placeholder-the-proxy-adds-the-real-key`;
+    return `${prefix}closedbox-placeholder-the-proxy-adds-the-real-key`;
 }
 /** Builds the placeholders of the secrets found on the computer; each of them is set, since only those are kept. */
 function buildPlaceholders(settings, environment) {
@@ -56,7 +56,7 @@ async function prepareCertificates(context, settings, caFolder) {
 /** Names the home volume after the agent and the project, so that two projects never share a home folder. */
 export function homeVolumeName(agent, projectFolder) {
     const digest = createHash("sha256").update(projectFolder).digest("hex").slice(0, 10);
-    return `stillsuit-home-${agent}-${digest}`;
+    return `closedbox-home-${agent}-${digest}`;
 }
 /** Scans the project with wormsign and tells whether the start must stop. */
 async function scanBeforeStart(context, options, settings) {
@@ -68,7 +68,7 @@ async function scanBeforeStart(context, options, settings) {
         context.write(outcome.report);
     }
     if (outcome.blocked) {
-        context.write("stillsuit: the assistant was not started, because the files above would run on their own.");
+        context.write("closedbox: the assistant was not started, because the files above would run on their own.");
         context.write("Delete them, or start with --no-scan if you know why they are there.");
     }
     return outcome.blocked;
@@ -154,7 +154,7 @@ function startWhois(watch, onAnswer) {
 async function startProxy(watch, mode, certificates) {
     const { context, runtime, plan } = watch;
     await runOrThrow(context, runtime, buildNetworkArguments(plan));
-    const proxyEnvironment = { ...context.environment, STILLSUIT_PROXY_CONFIG: buildProxyConfiguration(plan, mode, certificates) };
+    const proxyEnvironment = { ...context.environment, CLOSEDBOX_PROXY_CONFIG: buildProxyConfiguration(plan, mode, certificates) };
     await runOrThrow(context, runtime, buildProxyArguments(plan), proxyEnvironment);
     await runOrThrow(context, runtime, buildConnectArguments(plan));
     return waitForProxy(watch);
@@ -171,27 +171,27 @@ function writeBanner(context, options, plan, logPath) {
     const websites = options.mode === "audit"
         ? "all allowed for this run, and written down (audit)"
         : `only the ${plan.settings.allowRules.length} approved ones`;
-    context.write(`stillsuit: starting ${options.agent} in ${options.projectFolder}`);
+    context.write(`closedbox: starting ${options.agent} in ${options.projectFolder}`);
     context.write(`  files:     this folder only, without ${plan.masks.length} secret files (.env, keys…)`);
     context.write(`  websites:  ${websites}`);
     context.write(`  API keys:  ${secretCount} kept outside the box`);
-    context.write(`  log:       ${logPath.replace(homedir(), "~")}  (follow it live with: stillsuit watch)`);
+    context.write(`  log:       ${logPath.replace(homedir(), "~")}  (follow it live with: closedbox watch)`);
 }
 /** Writes the summary at the end of the session, and the audit allowlist when in audit mode. */
 function writeSummary(context, options, journal) {
     const blockedHosts = listBlockedHosts(journal.events);
     if (blockedHosts.length > 0) {
-        context.write(`stillsuit: blocked ${blockedHosts.length} website(s): ${blockedHosts.join(", ")}`);
-        context.write(`To allow one next time: stillsuit ${options.agent} --allow ${blockedHosts[0]}`);
+        context.write(`closedbox: blocked ${blockedHosts.length} website(s): ${blockedHosts.join(", ")}`);
+        context.write(`If your project really needs one of them, allow it with: closedbox ${options.agent} --allow <website>`);
     }
     if (options.mode !== "audit") {
         return;
     }
-    const auditPath = join(options.projectFolder, "stillsuit.audit.toml");
-    const header = "Hosts seen in audit mode. Read each one, remove what you do not trust, then rename this file stillsuit.toml.";
+    const auditPath = join(options.projectFolder, "closedbox.audit.toml");
+    const header = "Hosts seen in audit mode. Read each one, remove what you do not trust, then rename this file closedbox.toml.";
     writeFileSync(auditPath, writeConfigText(listAuditHosts(journal.events), header));
-    context.write(`stillsuit: the websites used are listed in ${auditPath}`);
-    context.write("Read the list, remove what you do not trust, then rename the file stillsuit.toml.");
+    context.write(`closedbox: the websites used are listed in ${auditPath}`);
+    context.write("Read the list, remove what you do not trust, then rename the file closedbox.toml.");
 }
 /**
  * Writes one live journal line. The final carriage return brings the cursor back to the first column, because the

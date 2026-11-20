@@ -1,12 +1,12 @@
-# stillsuit
+# closedbox
 
-**stillsuit runs your AI coding assistant (Claude Code or Codex) in a closed box.**
+**closedbox runs your AI coding assistant (Claude Code or Codex) in a closed box.**
 Inside the box, the assistant sees only your project folder, can only reach the websites you approve, and never
-sees your API keys. If something in the project tries to send your data away, stillsuit blocks it and tells you
+sees your API keys. If something in the project tries to send your data away, closedbox blocks it and tells you
 which program tried.
 
-[![CI](https://github.com/nukoe-labs/stillsuit/actions/workflows/ci.yml/badge.svg)](https://github.com/nukoe-labs/stillsuit/actions/workflows/ci.yml)
-[![Escape tests](https://github.com/nukoe-labs/stillsuit/actions/workflows/escape.yml/badge.svg)](https://github.com/nukoe-labs/stillsuit/actions/workflows/escape.yml)
+[![CI](https://github.com/nukoe-labs/closedbox/actions/workflows/ci.yml/badge.svg)](https://github.com/nukoe-labs/closedbox/actions/workflows/ci.yml)
+[![Escape tests](https://github.com/nukoe-labs/closedbox/actions/workflows/escape.yml/badge.svg)](https://github.com/nukoe-labs/closedbox/actions/workflows/escape.yml)
 ![coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)
 ![license MIT](https://img.shields.io/badge/license-MIT-blue)
 
@@ -17,24 +17,24 @@ You need [Node.js](https://nodejs.org) 20 or later and [Docker](https://www.dock
 
 ```sh
 cd my-project
-npx github:nukoe-labs/stillsuit claude
+npx github:nukoe-labs/closedbox claude
 ```
 
 That is all. The first start takes about a minute, to prepare the box. Then Claude Code opens as usual, inside it.
 Use `codex` instead of `claude` for Codex.
 
-![A trapped repository: wormsign flags its SessionStart hook, then stillsuit blocks the exfiltration and names the process](docs/demo.gif)
+![A trapped repository: wormsign flags its SessionStart hook, then closedbox blocks the exfiltration and names the process](docs/demo.gif)
 
-*A harmless trapped repository: wormsign flags its SessionStart hook; when the hook runs anyway, stillsuit blocks the
+*A harmless trapped repository: wormsign flags its SessionStart hook; when the hook runs anyway, closedbox blocks the
 connection and names the process. Reproduce it with `bash demo/run-demo.sh`.*
 
 ## Why use it
 
 Some repositories hide a script that starts **as soon as an AI assistant opens the folder**. It reads your SSH
 keys, your npm token, your cloud passwords and your AI API key, and sends them to a stranger. In November 2026, the
-Mini Shai-Hulud and Miasma worms spread this way. With stillsuit, opening an unknown repository is safe again.
+Mini Shai-Hulud and Miasma worms spread this way. With closedbox, opening an unknown repository is safe again.
 
-| | `claude` alone | `stillsuit claude` |
+| | `claude` alone | `closedbox claude` |
 |---|---|---|
 | What the assistant can read | your whole computer | this project folder only, without `.env` files and keys |
 | Where it can connect | anywhere on the internet | only the AI service and the package stores (npm, PyPI…) |
@@ -46,15 +46,15 @@ Mini Shai-Hulud and Miasma worms spread this way. With stillsuit, opening an unk
 
 | Command | What it does |
 |---|---|
-| `stillsuit claude` | open Claude Code in the box |
-| `stillsuit codex` | open Codex in the box |
-| `stillsuit shell -- npm test` | run any command in the box |
-| `stillsuit audit claude` | run once with every website allowed, then list the ones your project used |
-| `stillsuit init` | create a settings file, `stillsuit.toml`, in this folder |
-| `stillsuit trust` | read and approve the settings file of this folder |
-| `stillsuit watch` | show each connection live, in another terminal |
-| `stillsuit clean` | remove what a crash left behind |
-| `stillsuit --help` | show this list |
+| `closedbox claude` | open Claude Code in the box |
+| `closedbox codex` | open Codex in the box |
+| `closedbox shell -- npm test` | run any command in the box |
+| `closedbox audit claude` | run once with every website allowed, then list the ones your project used |
+| `closedbox init` | create a settings file, `closedbox.toml`, in this folder |
+| `closedbox trust` | read and approve the settings file of this folder |
+| `closedbox watch` | show each connection live, in another terminal |
+| `closedbox clean` | remove what a crash left behind |
+| `closedbox --help` | show this list |
 
 Options:
 
@@ -66,22 +66,23 @@ Options:
 | `--no-scan` | skip the check for trapped files before the start |
 | `--runtime docker` or `--runtime podman` | choose the container tool (default: the one that is running) |
 
-Anything after the assistant's name goes to the assistant: `stillsuit claude --model opus` works as usual.
+Anything after the assistant's name goes to the assistant: `closedbox claude --model opus` works as usual.
 
 ## My project needs another website
 
-When stillsuit blocks a website your project really needs, it says so at the end, with the command to allow it:
+When closedbox blocks a website, it says so at the end. Check that you know the website first: a blocked website is
+often the very thing a trap tried to reach. If your project really needs it:
 
 ```text
-stillsuit: blocked 1 website(s): api.stripe.com
-To allow one next time: stillsuit claude --allow api.stripe.com
+closedbox: blocked 1 website(s): api.stripe.com
+If your project really needs one of them, allow it with: closedbox claude --allow <website>
 ```
 
-To allow it every time, list it in a `stillsuit.toml` file (see [Settings](#settings-optional)).
+To allow it every time, list it in a `closedbox.toml` file (see [Settings](#settings-optional)).
 
 ## See every connection
 
-stillsuit writes one line for each connection the assistant tries, with the program behind it. `allowed` means it
+closedbox writes one line for each connection the assistant tries, with the program behind it. `allowed` means it
 went through, `secret` means your API key was added on the way out, `BLOCKED` means it was stopped:
 
 ```text
@@ -91,15 +92,15 @@ BLOCKED  evil.example:443  (by node scripts/setup.js)  [not in the allowlist]
 BLOCKED  169.254.169.254:80  (by curl -s http://169.254.169.254/latest/meta-data/)  [not in the allowlist]
 ```
 
-Run `stillsuit watch` in another terminal to follow it live. A short summary is shown when the assistant stops.
+Run `closedbox watch` in another terminal to follow it live. A short summary is shown when the assistant stops.
 
 ## Settings (optional)
 
 You do not need any settings. To let a project reach more websites every time, the easiest way is:
 
-1. run `stillsuit audit claude` and use your project as usual: every website is allowed and written down;
-2. open the `stillsuit.audit.toml` file it creates, and remove any website you do not trust;
-3. rename it `stillsuit.toml`.
+1. run `closedbox audit claude` and use your project as usual: every website is allowed and written down;
+2. open the `closedbox.audit.toml` file it creates, and remove any website you do not trust;
+3. rename it `closedbox.toml`.
 
 A full settings file looks like this:
 
@@ -125,8 +126,8 @@ header = "authorization"
 template = "Bearer {value}"
 ```
 
-**A repository can ship its own `stillsuit.toml`** to allow its exfiltration host. stillsuit refuses any new or
-changed `stillsuit.toml` until you run `stillsuit trust`, which shows it first. A file cannot move the keys of the
+**A repository can ship its own `closedbox.toml`** to allow its exfiltration host. closedbox refuses any new or
+changed `closedbox.toml` until you run `closedbox trust`, which shows it first. A file cannot move the keys of the
 built-in profiles to another host.
 
 Default allowlist: the agent's API and login hosts, plus `registry.npmjs.org`, `registry.yarnpkg.com`, `pypi.org`,
@@ -138,7 +139,7 @@ GitHub is off unless `github = true`.
 ```text
  your computer                       container engine
  ─────────────                       ──────────────────────────────────────────────────────────────
- stillsuit ──► wormsign scan          internal network (no route out, DNS to 192.0.2.1)
+ closedbox ──► wormsign scan          internal network (no route out, DNS to 192.0.2.1)
      │                                ┌───────────────────────────────┐      ┌─────────────────────┐
      ├─► ANTHROPIC_API_KEY ─────────► │ proxy  (node, read-only,      │ ───► │ api.anthropic.com   │
      │   (never on a command line)    │ no capabilities)              │      │ registry.npmjs.org  │
@@ -184,13 +185,13 @@ is unreachable:
 
 The unit tests cover 100 % of lines, branches and functions, including the proxy with real TLS servers.
 
-## What stillsuit does not do
+## What closedbox does not do
 
 - A container shares the host kernel: a kernel exploit escapes it. A micro-VM is stronger.
 - The allowlist decides **where** data can go, not **what** goes there. A host that accepts uploads can carry data out
   if you allow it with a token that can write.
 - The agent can use the key it does not see, but only towards its own host, and only for your account.
-- `stillsuit` starts Docker containers, so it needs the Docker socket on **your** side; the agent never gets it.
+- `closedbox` starts Docker containers, so it needs the Docker socket on **your** side; the agent never gets it.
 - Apple `container` is not supported yet: it has no internal network that blocks egress.
 - Process names are best effort: a connection that closes before the helper looks at it is written without a name.
 
@@ -200,7 +201,7 @@ The unit tests cover 100 % of lines, branches and functions, including the proxy
 - [awesome-coding-agent-security](https://github.com/nukoe-labs/awesome-coding-agent-security) lists attacks,
   advisories and defenses for coding agents.
 
-In Dune, the wormsign warns you that a sandworm is coming, and the stillsuit keeps every drop of you inside.
+wormsign finds the trap in a repository; closedbox keeps it from reaching anything if it runs anyway.
 
 ## More
 

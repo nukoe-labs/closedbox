@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# This script runs the escape probes in a real stillsuit sandbox and fails if any escape succeeds.
+# This script runs the escape probes in a real closedbox sandbox and fails if any escape succeeds.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PROJECT="$(mktemp -d)"
-CANARY="$HOME/stillsuit-canary-$$"
+CANARY="$HOME/closedbox-canary-$$"
 trap 'rm -rf "$PROJECT" "$CANARY"' EXIT
 
 echo "REALCANARY-home-file" > "$CANARY"
@@ -12,7 +12,7 @@ echo "DATABASE_PASSWORD=REALCANARY-dotenv" > "$PROJECT/.env"
 mkdir -p "$PROJECT/config" && echo "REALCANARY-private-key" > "$PROJECT/config/id_rsa"
 
 cd "$PROJECT"
-OUTPUT="$(ANTHROPIC_API_KEY=sk-ant-REALCANARY GITHUB_TOKEN=ghp_canary node "$ROOT/dist/bin/stillsuit.js" shell --no-scan -- bash /workspace/probes.sh 2>&1 || true)"
+OUTPUT="$(ANTHROPIC_API_KEY=sk-ant-REALCANARY GITHUB_TOKEN=ghp_canary node "$ROOT/dist/bin/closedbox.js" shell --no-scan -- bash /workspace/probes.sh 2>&1 || true)"
 echo "$OUTPUT"
 
 BLOCKED="$(grep -c '^blocked ' <<<"$OUTPUT" || true)"

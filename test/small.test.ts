@@ -56,7 +56,7 @@ async function buildsTheImageOnlyWhenMissing(): Promise<void> {
   writeFileSync(caPath, "CA");
   const build = { folder: join(folder, "build"), caPath, agentPackages: AGENT_PACKAGES, user: { uid: 1001, gid: 121 } };
   const present = createFakeRunner();
-  await expect(ensureAgentImage(present, "docker", build)).resolves.toMatch(/^stillsuit-agent:[0-9a-f]{12}$/u);
+  await expect(ensureAgentImage(present, "docker", build)).resolves.toMatch(/^closedbox-agent:[0-9a-f]{12}$/u);
   expect(present.calls).toHaveLength(1);
   const missing = createFakeRunner({ "image inspect": { code: 1 } });
   await ensureAgentImage(missing, "podman", build);
@@ -80,7 +80,7 @@ function writesTheDockerfile(): void {
 async function runsRealPrograms(): Promise<void> {
   await expect(SYSTEM_RUNNER.run("node", ["-e", "process.stdout.write('out');process.stderr.write('err');process.exit(3)"])).resolves.toEqual({ code: 3, stdout: "out", stderr: "err" });
   await expect(SYSTEM_RUNNER.run("node", ["-e", "process.stdout.write(process.env.X)"], { ...process.env, X: "y" })).resolves.toMatchObject({ stdout: "y" });
-  await expect(SYSTEM_RUNNER.run("stillsuit-missing-program", [])).resolves.toMatchObject({ code: 127 });
+  await expect(SYSTEM_RUNNER.run("closedbox-missing-program", [])).resolves.toMatchObject({ code: 127 });
   await expect(SYSTEM_RUNNER.interactive("node", ["-e", "process.exit(5)"], process.env)).resolves.toBe(5);
   await expect(SYSTEM_RUNNER.run("node", ["-e", "process.kill(process.pid,'SIGKILL')"])).resolves.toMatchObject({ code: 1 });
   const lines = await readStreamLines();
@@ -120,7 +120,7 @@ function readMissingStream(): Promise<string[]> {
 /** Collects the empty line reported when the program does not exist. */
 function collectMissing(resolve: (lines: string[]) => void): void {
   const lines: string[] = [];
-  SYSTEM_RUNNER.stream("stillsuit-missing-program", [], keepAndResolve);
+  SYSTEM_RUNNER.stream("closedbox-missing-program", [], keepAndResolve);
   /** Keeps the line and resolves once. */
   function keepAndResolve(text: string): void {
     lines.push(text);

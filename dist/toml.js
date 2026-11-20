@@ -2,7 +2,7 @@
 export class TomlError extends Error {
     /** Builds the error with the line number, so that the person can find the mistake. */
     constructor(lineNumber, reason) {
-        super(`stillsuit.toml, line ${lineNumber}: ${reason}`);
+        super(`closedbox.toml, line ${lineNumber}: ${reason}`);
         this.name = "TomlError";
     }
 }
@@ -142,7 +142,7 @@ function readLine(root, current, text, lineNumber) {
     return current;
 }
 /**
- * Reads the subset of TOML used by stillsuit.toml: tables, dotted tables, quoted texts, booleans,
+ * Reads the subset of TOML used by closedbox.toml: tables, dotted tables, quoted texts, booleans,
  * whole numbers and lists, with comments.
  */
 export function parseToml(text) {

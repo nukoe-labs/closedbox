@@ -255,7 +255,7 @@ function answerBadGateway(origin: { options: ProxyOptions; sourceSocket: Socket;
 function handlePlainRequest(options: ProxyOptions, request: IncomingMessage, response: ServerResponse): void {
   const url = readAbsoluteUrl(readTarget(request));
   if (url === undefined) {
-    response.writeHead(400).end("stillsuit: this is a proxy, send absolute URLs.\n");
+    response.writeHead(400).end("closedbox: this is a proxy, send absolute URLs.\n");
     return;
   }
   const host = normalizeHost(url.hostname);
@@ -280,7 +280,7 @@ function readAbsoluteUrl(text: string): URL | undefined {
 
 /** Answers 403 with a short explanation for the agent. */
 function answerForbidden(response: ServerResponse, host: string): void {
-  response.writeHead(403, { "content-type": "text/plain" }).end(`stillsuit: ${host} is not in the allowlist.\n`);
+  response.writeHead(403, { "content-type": "text/plain" }).end(`closedbox: ${host} is not in the allowlist.\n`);
 }
 
 /** Sends a plain HTTP request to the real host, after checking that its address is public. */

@@ -13,14 +13,14 @@ function readStore(storePath) {
     return JSON.parse(readFileSync(storePath, "utf8"));
 }
 /**
- * Tells whether this exact stillsuit.toml was approved for this project. A repository can ship its own stillsuit.toml
+ * Tells whether this exact closedbox.toml was approved for this project. A repository can ship its own closedbox.toml
  * to widen the allowlist, so a new or changed file is never used before the person approves it.
  */
 export function isTrusted(storePath, projectFolder, configText) {
     const store = readStore(storePath);
     return store[projectFolder] === digestText(configText);
 }
-/** Records that the person approved this stillsuit.toml for this project. */
+/** Records that the person approved this closedbox.toml for this project. */
 export function trustConfig(storePath, projectFolder, configText) {
     const store = readStore(storePath);
     store[projectFolder] = digestText(configText);

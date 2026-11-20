@@ -80,7 +80,7 @@ function markStopped(entry: { stopped: boolean }): void {
 
 /** Creates an empty temporary folder. */
 export function makeTemporaryFolder(prefix: string): string {
-  return mkdtempSync(join(tmpdir(), `stillsuit-${prefix}-`));
+  return mkdtempSync(join(tmpdir(), `closedbox-${prefix}-`));
 }
 
 /** Waits for a number of milliseconds. */

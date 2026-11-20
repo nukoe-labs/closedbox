@@ -12,7 +12,7 @@ export declare class TomlError extends Error {
 /** Reads one value: a text, a boolean, a whole number or a list. */
 export declare function readValue(text: string, lineNumber: number): TomlValue;
 /**
- * Reads the subset of TOML used by stillsuit.toml: tables, dotted tables, quoted texts, booleans,
+ * Reads the subset of TOML used by closedbox.toml: tables, dotted tables, quoted texts, booleans,
  * whole numbers and lists, with comments.
  */
 export declare function parseToml(text: string): TomlTable;

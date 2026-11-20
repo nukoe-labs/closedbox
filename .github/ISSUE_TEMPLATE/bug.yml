@@ -1,5 +1,5 @@
 name: Bug
-description: stillsuit does not work as documented.
+description: closedbox does not work as documented.
 labels: [bug]
 body:
   - type: textarea
@@ -13,6 +13,6 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: Output of `stillsuit --version`, `node --version` and `docker version --format '{{.Server.Version}}'`.
+      description: Output of `closedbox --version`, `node --version` and `docker version --format '{{.Server.Version}}'`.
     validations:
       required: true

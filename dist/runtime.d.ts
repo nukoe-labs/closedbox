@@ -1,17 +1,17 @@
 import type { SessionSettings } from "./config.js";
 import type { MaskedPath } from "./masks.js";
 import type { Runner } from "./runner.js";
-/** The container engines stillsuit can drive. */
+/** The container engines closedbox can drive. */
 export type RuntimeName = "docker" | "podman";
 /** The address of the proxy as seen from the agent container. */
-export declare const PROXY_ALIAS = "stillsuit-proxy";
+export declare const PROXY_ALIAS = "closedbox-proxy";
 export declare const PROXY_PORT = 3128;
 /** The project folder inside the container. */
 export declare const WORKSPACE = "/workspace";
-/** Where the compiled stillsuit files are mounted, read only, in both containers. */
-export declare const PACKAGE_MOUNT = "/opt/stillsuit";
+/** Where the compiled closedbox files are mounted, read only, in both containers. */
+export declare const PACKAGE_MOUNT = "/opt/closedbox";
 /** The CA file path inside the agent image. */
-export declare const CA_IN_IMAGE = "/usr/local/share/ca-certificates/stillsuit.crt";
+export declare const CA_IN_IMAGE = "/usr/local/share/ca-certificates/closedbox.crt";
 /** An address reserved for documentation (RFC 5737): DNS queries sent there go nowhere. */
 export declare const BLACKHOLE_DNS = "192.0.2.1";
 /** Finds a container engine: the one asked for, or Docker then Podman. Apple container has no internal network yet. */
@@ -25,7 +25,7 @@ export interface HostUser {
 export interface SessionPlan {
     id: string;
     projectFolder: string;
-    /** The compiled stillsuit folder on the computer. */
+    /** The compiled closedbox folder on the computer. */
     packageFolder: string;
     agentImage: string;
     proxyImage: string;

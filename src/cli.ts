@@ -13,23 +13,23 @@ import { trustConfig } from "./trust.js";
 /** The version printed by --version, kept equal to the one in package.json. */
 export const VERSION = "0.1.0";
 
-export const USAGE = `stillsuit ${VERSION}
+export const USAGE = `closedbox ${VERSION}
 Runs your AI coding assistant in a closed box. Inside, it sees only this project folder,
 reaches only the websites you approve, and never sees your API keys.
 
 Start:
-  stillsuit claude               open Claude Code in the box
-  stillsuit codex                open Codex in the box
-  stillsuit shell -- npm test    run any command in the box
+  closedbox claude               open Claude Code in the box
+  closedbox codex                open Codex in the box
+  closedbox shell -- npm test    run any command in the box
 
 Set up a project (optional):
-  stillsuit audit claude         run once with every website allowed, then list the ones used
-  stillsuit init                 create a settings file (stillsuit.toml) in this folder
-  stillsuit trust                read and approve the settings file of this folder
+  closedbox audit claude         run once with every website allowed, then list the ones used
+  closedbox init                 create a settings file (closedbox.toml) in this folder
+  closedbox trust                read and approve the settings file of this folder
 
 While it runs:
-  stillsuit watch                show each connection live, in another terminal
-  stillsuit clean                remove what a crash left behind
+  closedbox watch                show each connection live, in another terminal
+  closedbox clean                remove what a crash left behind
 
 Options:
   --allow <website>    allow one more website for this run (repeat it for more)
@@ -38,10 +38,10 @@ Options:
   --no-scan            skip the check for trapped files before the start
   --runtime <name>     docker or podman (default: the one that is running)
 
-More help: https://github.com/nukoe-labs/stillsuit`;
+More help: https://github.com/nukoe-labs/closedbox`;
 
 /** The line added under every error, so that the next step is always clear. */
-export const HELP_HINT = "Run `stillsuit --help` to see every command.";
+export const HELP_HINT = "Run `closedbox --help` to see every command.";
 
 /** An example value for each option that takes one, shown when the value is missing. */
 const OPTION_EXAMPLES: Record<string, string> = { "--allow": "api.stripe.com", "--runtime": "docker", "--project": "~/code/my-app" };
@@ -103,7 +103,7 @@ function readWords(argumentsList: string[], workingFolder: string): Reading {
   return reading;
 }
 
-/** Tells whether the person asked for help with a stillsuit command, such as `stillsuit init --help`. */
+/** Tells whether the person asked for help with a closedbox command, such as `closedbox init --help`. */
 function asksForHelp(words: string[]): boolean {
   const [first = "--help", second = ""] = words;
   const helpWanted = HELP_WORDS.has(first) || (SIMPLE_COMMANDS.has(first) && HELP_WORDS.has(second));
@@ -139,9 +139,9 @@ function describeUnknownWord(word: string): string {
   const known = [...Object.keys(PROFILES), "audit", ...SIMPLE_COMMANDS];
   const closest = known.find(isCloseTo.bind(undefined, word));
   if (closest !== undefined) {
-    return `"${word}" is not a stillsuit command. Did you mean: stillsuit ${closest}`;
+    return `"${word}" is not a closedbox command. Did you mean: closedbox ${closest}`;
   }
-  return `"${word}" is not a stillsuit command. Start with: stillsuit claude, stillsuit codex or stillsuit shell`;
+  return `"${word}" is not a closedbox command. Start with: closedbox claude, closedbox codex or closedbox shell`;
 }
 
 /** Tells whether a known command is at most two letters away from the typed word. */
@@ -167,7 +167,7 @@ export function parseCommandLine(argumentsList: string[], workingFolder: string)
   const isAudit = first === "audit";
   const agent = isAudit ? (rest.shift() ?? "") : first;
   if (isAudit && !(agent in PROFILES)) {
-    throw new RangeError(`audit needs an assistant to start, for example: stillsuit audit claude`);
+    throw new RangeError(`audit needs an assistant to start, for example: closedbox audit claude`);
   }
   if (!(agent in PROFILES)) {
     throw new RangeError(describeUnknownWord(agent));
@@ -177,51 +177,51 @@ export function parseCommandLine(argumentsList: string[], workingFolder: string)
   return { command: "launch", options: { agent, argumentsList: rest, projectFolder, mode, extraHosts, scan, runtime, liveJournal } };
 }
 
-/** Finds the folders of stillsuit, following the XDG conventions. */
+/** Finds the folders of closedbox, following the XDG conventions. */
 export function resolvePaths(environment: NodeJS.ProcessEnv, home: string, packageFolder: string): Paths {
   const configHome = environment.XDG_CONFIG_HOME ?? join(home, ".config");
   const stateHome = environment.XDG_STATE_HOME ?? join(home, ".local", "state");
   const cacheHome = environment.XDG_CACHE_HOME ?? join(home, ".cache");
-  return { config: join(configHome, "stillsuit"), state: join(stateHome, "stillsuit"), cache: join(cacheHome, "stillsuit"), packageFolder };
+  return { config: join(configHome, "closedbox"), state: join(stateHome, "closedbox"), cache: join(cacheHome, "closedbox"), packageFolder };
 }
 
-/** Writes a commented stillsuit.toml, refusing to replace an existing one, and approves it. */
+/** Writes a commented closedbox.toml, refusing to replace an existing one, and approves it. */
 export function initConfig(context: Context, projectFolder: string): number {
   const configPath = join(projectFolder, CONFIG_FILE);
   if (existsSync(configPath)) {
-    context.write(`${configPath} already exists. Edit it, then approve it with: stillsuit trust`);
+    context.write(`${configPath} already exists. Edit it, then approve it with: closedbox trust`);
     return 1;
   }
-  const text = writeConfigText([], "stillsuit settings. Run `stillsuit audit claude` to see which websites your project needs.");
+  const text = writeConfigText([], "closedbox settings. Run `closedbox audit claude` to see which websites your project needs.");
   writeFileSync(configPath, text);
   trustConfig(join(context.paths.config, "trusted.json"), projectFolder, text);
-  context.write(`Created ${configPath}. Add websites to it, then approve it with: stillsuit trust`);
+  context.write(`Created ${configPath}. Add websites to it, then approve it with: closedbox trust`);
   return 0;
 }
 
-/** Shows the stillsuit.toml of the project, then records that the person approved it. */
+/** Shows the closedbox.toml of the project, then records that the person approved it. */
 export function trustProjectConfig(context: Context, projectFolder: string): number {
   const configPath = join(projectFolder, CONFIG_FILE);
   if (!existsSync(configPath)) {
-    context.write(`There is no ${CONFIG_FILE} in ${projectFolder}. Create one with: stillsuit init`);
+    context.write(`There is no ${CONFIG_FILE} in ${projectFolder}. Create one with: closedbox init`);
     return 1;
   }
   const text = readFileSync(configPath, "utf8");
   context.write(text);
   trustConfig(join(context.paths.config, "trusted.json"), projectFolder, text);
-  context.write(`Approved ${configPath}. If it changes, stillsuit will ask you to approve it again.`);
+  context.write(`Approved ${configPath}. If it changes, closedbox will ask you to approve it again.`);
   return 0;
 }
 
 /** Removes the containers and networks left by a session that crashed. */
 export async function cleanLeftovers(context: Context, runtime: string): Promise<number> {
   const engine = runtime === "auto" ? "docker" : runtime;
-  const containers = await context.runner.run(engine, ["ps", "-aq", "--filter", "label=stillsuit.session"]);
+  const containers = await context.runner.run(engine, ["ps", "-aq", "--filter", "label=closedbox.session"]);
   const containerIds = containers.stdout.split("\n").filter(Boolean);
   if (containerIds.length > 0) {
     await context.runner.run(engine, ["rm", "-f", ...containerIds]);
   }
-  await context.runner.run(engine, ["network", "prune", "-f", "--filter", "label=stillsuit.session"]);
+  await context.runner.run(engine, ["network", "prune", "-f", "--filter", "label=closedbox.session"]);
   context.write(`Cleaned up: ${containerIds.length} leftover box(es) removed.`);
   return 0;
 }
@@ -230,7 +230,7 @@ export async function cleanLeftovers(context: Context, runtime: string): Promise
 export function watchJournal(context: Context, intervalMs: number): { stop: () => void } | undefined {
   const latestPath = join(context.paths.state, "latest");
   if (!existsSync(latestPath)) {
-    context.write("Nothing to watch yet. Start a session first, for example: stillsuit claude");
+    context.write("Nothing to watch yet. Start a session first, for example: closedbox claude");
     return undefined;
   }
   const logPath = readFileSync(latestPath, "utf8").trim();
@@ -272,13 +272,13 @@ async function runCommandLine(context: Context, commandLine: CommandLine): Promi
   }
 }
 
-/** Runs stillsuit with a context, writes errors as messages and returns the exit code. */
+/** Runs closedbox with a context, writes errors as messages and returns the exit code. */
 export async function run(argumentsList: string[], context: Context, workingFolder: string): Promise<number> {
   try {
     const commandLine = parseCommandLine(argumentsList, workingFolder);
     return await runCommandLine(context, commandLine);
   } catch (error) {
-    context.write(`stillsuit: ${(error as Error).message}`);
+    context.write(`closedbox: ${(error as Error).message}`);
     context.write(HELP_HINT);
     return EXIT_SETUP_FAILED;
   }
@@ -289,7 +289,7 @@ function writeLine(text: string): void {
   process.stderr.write(`${text}\n`);
 }
 
-/** What stillsuit reads about the computer it runs on: the terminals and the user. */
+/** What closedbox reads about the computer it runs on: the terminals and the user. */
 export interface Host {
   /** Tells whether the standard input is a terminal. */
   input: boolean;
@@ -306,7 +306,7 @@ export function createSystemContext(runner: Runner, environment: NodeJS.ProcessE
   return { runner, environment, paths: resolvePaths(environment, homedir(), packageFolder), write: writeLine, useColor, isTerminal, user: host.user };
 }
 
-/** Starts stillsuit from the command line, as the given user of the computer. */
+/** Starts closedbox from the command line, as the given user of the computer. */
 export function main(argumentsList: string[], user: HostUser): Promise<number> {
   const host = { input: process.stdin.isTTY === true, error: process.stderr.isTTY === true, user };
   return run(argumentsList, createSystemContext(SYSTEM_RUNNER, process.env, host), process.cwd());

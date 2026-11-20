@@ -33,15 +33,15 @@ function readsTheCommandLine(): void {
 
 /** Checks the refused command lines. */
 function refusesWrongCommandLines(): void {
-  expect(parseCommandLine.bind(undefined, ["cursor"], "/w")).toThrow('"cursor" is not a stillsuit command. Start with: stillsuit claude, stillsuit codex or stillsuit shell');
-  expect(parseCommandLine.bind(undefined, ["clude"], "/w")).toThrow("Did you mean: stillsuit claude");
-  expect(parseCommandLine.bind(undefined, ["iint"], "/w")).toThrow("Did you mean: stillsuit init");
-  expect(parseCommandLine.bind(undefined, ["audit"], "/w")).toThrow("audit needs an assistant to start, for example: stillsuit audit claude");
+  expect(parseCommandLine.bind(undefined, ["cursor"], "/w")).toThrow('"cursor" is not a closedbox command. Start with: closedbox claude, closedbox codex or closedbox shell');
+  expect(parseCommandLine.bind(undefined, ["clude"], "/w")).toThrow("Did you mean: closedbox claude");
+  expect(parseCommandLine.bind(undefined, ["iint"], "/w")).toThrow("Did you mean: closedbox init");
+  expect(parseCommandLine.bind(undefined, ["audit"], "/w")).toThrow("audit needs an assistant to start, for example: closedbox audit claude");
   expect(parseCommandLine.bind(undefined, ["claude", "--allow"], "/w")).toThrow("--allow needs a value, for example: --allow api.stripe.com");
   expect(parseCommandLine.bind(undefined, ["claude", "--runtime", "--live"], "/w")).toThrow("--runtime needs a value, for example: --runtime docker");
 }
 
-/** Checks that asking for help never runs the command, so that `stillsuit init --help` never writes a file. */
+/** Checks that asking for help never runs the command, so that `closedbox init --help` never writes a file. */
 function showsHelpInsteadOfRunning(): void {
   expect(parseCommandLine(["init", "--help"], "/w").command).toBe("help");
   expect(parseCommandLine(["clean", "-h"], "/w").command).toBe("help");
@@ -52,8 +52,8 @@ function showsHelpInsteadOfRunning(): void {
 
 /** Checks the XDG folders. */
 function resolvesTheFolders(): void {
-  expect(resolvePaths({}, "/home/a", "/pkg")).toEqual({ config: "/home/a/.config/stillsuit", state: "/home/a/.local/state/stillsuit", cache: "/home/a/.cache/stillsuit", packageFolder: "/pkg" });
-  expect(resolvePaths({ XDG_CONFIG_HOME: "/c", XDG_STATE_HOME: "/s", XDG_CACHE_HOME: "/k" }, "/home/a", "/pkg")).toMatchObject({ config: "/c/stillsuit", state: "/s/stillsuit", cache: "/k/stillsuit" });
+  expect(resolvePaths({}, "/home/a", "/pkg")).toEqual({ config: "/home/a/.config/closedbox", state: "/home/a/.local/state/closedbox", cache: "/home/a/.cache/closedbox", packageFolder: "/pkg" });
+  expect(resolvePaths({ XDG_CONFIG_HOME: "/c", XDG_STATE_HOME: "/s", XDG_CACHE_HOME: "/k" }, "/home/a", "/pkg")).toMatchObject({ config: "/c/closedbox", state: "/s/closedbox", cache: "/k/closedbox" });
 }
 
 /** Checks init and trust, which approve the file they show or write. */
@@ -63,12 +63,12 @@ function initializesAndTrustsTheConfig(): void {
   expect(trustProjectConfig(context, project)).toBe(1);
   expect(initConfig(context, project)).toBe(0);
   expect(initConfig(context, project)).toBe(1);
-  const configPath = join(project, "stillsuit.toml");
+  const configPath = join(project, "closedbox.toml");
   expect(isTrusted(join(context.paths.config, "trusted.json"), project, readFileSync(configPath, "utf8"))).toBe(true);
   appendFileSync(configPath, "# changed\n");
   expect(trustProjectConfig(context, project)).toBe(0);
   expect(context.written.join("\n")).toContain("# changed");
-  expect(context.written[0]).toContain("Create one with: stillsuit init");
+  expect(context.written[0]).toContain("Create one with: closedbox init");
 }
 
 /** Checks the removal of leftovers, with and without containers. */
@@ -103,7 +103,7 @@ async function followsTheJournal(): Promise<void> {
   writeFileSync(logPath, "first\nsecond\n");
   await wait(200);
   watcher?.stop();
-  expect(context.written).toEqual(["Nothing to watch yet. Start a session first, for example: stillsuit claude", "first", "second"]);
+  expect(context.written).toEqual(["Nothing to watch yet. Start a session first, for example: closedbox claude", "first", "second"]);
 }
 
 /** Checks that run dispatches each command and turns errors into messages. */

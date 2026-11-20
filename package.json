@@ -1,10 +1,10 @@
 {
-  "name": "stillsuit",
+  "name": "closedbox",
   "version": "0.1.0",
   "description": "Run Claude Code or Codex in a closed box: it sees only your project, reaches only the websites you approve, and never sees your API keys.",
   "type": "module",
   "bin": {
-    "stillsuit": "./dist/bin/stillsuit.js"
+    "closedbox": "./dist/bin/closedbox.js"
   },
   "files": [
     "dist/**/*.js",
@@ -38,7 +38,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nukoe-labs/stillsuit.git"
+    "url": "git+https://github.com/nukoe-labs/closedbox.git"
   },
   "engines": {
     "node": ">=20"

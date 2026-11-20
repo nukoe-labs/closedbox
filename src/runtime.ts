@@ -2,18 +2,18 @@ import type { SessionSettings } from "./config.js";
 import type { MaskedPath } from "./masks.js";
 import type { Runner } from "./runner.js";
 
-/** The container engines stillsuit can drive. */
+/** The container engines closedbox can drive. */
 export type RuntimeName = "docker" | "podman";
 
 /** The address of the proxy as seen from the agent container. */
-export const PROXY_ALIAS = "stillsuit-proxy";
+export const PROXY_ALIAS = "closedbox-proxy";
 export const PROXY_PORT = 3128;
 /** The project folder inside the container. */
 export const WORKSPACE = "/workspace";
-/** Where the compiled stillsuit files are mounted, read only, in both containers. */
-export const PACKAGE_MOUNT = "/opt/stillsuit";
+/** Where the compiled closedbox files are mounted, read only, in both containers. */
+export const PACKAGE_MOUNT = "/opt/closedbox";
 /** The CA file path inside the agent image. */
-export const CA_IN_IMAGE = "/usr/local/share/ca-certificates/stillsuit.crt";
+export const CA_IN_IMAGE = "/usr/local/share/ca-certificates/closedbox.crt";
 /** An address reserved for documentation (RFC 5737): DNS queries sent there go nowhere. */
 export const BLACKHOLE_DNS = "192.0.2.1";
 /** The user of the proxy container, which reads no file of the person. */
@@ -41,7 +41,7 @@ export interface HostUser {
 export interface SessionPlan {
   id: string;
   projectFolder: string;
-  /** The compiled stillsuit folder on the computer. */
+  /** The compiled closedbox folder on the computer. */
   packageFolder: string;
   agentImage: string;
   proxyImage: string;
@@ -60,7 +60,7 @@ export interface SessionPlan {
 
 /** Returns the names of the network and containers of a session. */
 export function sessionNames(id: string): { network: string; proxy: string; agent: string } {
-  return { network: `stillsuit-net-${id}`, proxy: `stillsuit-proxy-${id}`, agent: `stillsuit-agent-${id}` };
+  return { network: `closedbox-net-${id}`, proxy: `closedbox-proxy-${id}`, agent: `closedbox-agent-${id}` };
 }
 
 /** The options that take every privilege away from a container. */
@@ -68,7 +68,7 @@ const HARDENING = ["--cap-drop", "ALL", "--security-opt", "no-new-privileges"];
 
 /** Builds the arguments that create the internal network: containers on it have no route out. */
 export function buildNetworkArguments(plan: SessionPlan): string[] {
-  return ["network", "create", "--internal", "--label", `stillsuit.session=${plan.id}`, sessionNames(plan.id).network];
+  return ["network", "create", "--internal", "--label", `closedbox.session=${plan.id}`, sessionNames(plan.id).network];
 }
 
 /** Builds the arguments that start the proxy, the only container with a route to the Internet. */
@@ -77,8 +77,8 @@ export function buildProxyArguments(plan: SessionPlan): string[] {
   const secretArguments = Object.keys(plan.settings.secrets).flatMap(toEnvironmentArgument);
   const limits = ["--memory", "256m", "--pids-limit", "256", "--read-only", "--user", PROXY_USER];
   const mount = ["-v", `${plan.packageFolder}:${PACKAGE_MOUNT}:ro`];
-  const labels = ["--label", `stillsuit.session=${plan.id}`];
-  const environment = ["-e", "STILLSUIT_PROXY_CONFIG", ...secretArguments];
+  const labels = ["--label", `closedbox.session=${plan.id}`];
+  const environment = ["-e", "CLOSEDBOX_PROXY_CONFIG", ...secretArguments];
   return ["run", "-d", "--rm", "--name", names.proxy, ...labels, ...HARDENING, ...limits, ...mount, ...environment, plan.proxyImage, "node", `${PACKAGE_MOUNT}/bin/proxy.js`];
 }
 
@@ -124,7 +124,7 @@ export function buildAgentEnvironment(plan: SessionPlan): Record<string, string>
     CODEX_CA_CERTIFICATE: caBundle,
     NODE_USE_ENV_PROXY: "1",
     NODE_OPTIONS: "--disable-warning=UNDICI-EHPA",
-    STILLSUIT: "1",
+    CLOSEDBOX: "1",
     ...plan.placeholders,
   };
 }
@@ -133,12 +133,12 @@ export function buildAgentEnvironment(plan: SessionPlan): Record<string, string>
 export function buildAgentArguments(plan: SessionPlan): string[] {
   const names = sessionNames(plan.id);
   const terminal = plan.useTerminal ? ["-it"] : ["-i"];
-  const network = ["--network", names.network, "--dns", BLACKHOLE_DNS, "--hostname", "stillsuit"];
+  const network = ["--network", names.network, "--dns", BLACKHOLE_DNS, "--hostname", "closedbox"];
   const limits = ["--memory", plan.settings.memory, "--pids-limit", "4096", "--user", `${plan.user.uid}:${plan.user.gid}`];
   const mounts = ["-v", `${plan.projectFolder}:${WORKSPACE}`, "-w", WORKSPACE, "-v", `${plan.homeVolume}:/home/node`, "-v", `${plan.packageFolder}:${PACKAGE_MOUNT}:ro`];
   const maskMounts = plan.masks.filter(isMountablePath).flatMap(buildMaskArguments);
   const environment = Object.keys(buildAgentEnvironment(plan)).flatMap(toEnvironmentArgument);
-  const labels = ["--label", `stillsuit.session=${plan.id}`];
+  const labels = ["--label", `closedbox.session=${plan.id}`];
   const start = ["run", "--rm", ...terminal, "--name", names.agent, ...labels];
   return [...start, ...network, ...HARDENING, ...limits, ...mounts, ...maskMounts, ...environment, plan.agentImage, plan.command, ...plan.argumentsList];
 }

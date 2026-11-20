@@ -2,10 +2,10 @@ import { parseAllowRule } from "./hosts.js";
 import { GITHUB_HOSTS, REGISTRY_HOSTS } from "./profiles.js";
 import { parseToml } from "./toml.js";
 /** The name of the configuration file read at the root of the project. */
-export const CONFIG_FILE = "stillsuit.toml";
+export const CONFIG_FILE = "closedbox.toml";
 /** The files hidden from the agent by default, even inside the project folder. */
 export const DEFAULT_MASKS = [".env", ".env.*", "*.pem", "*.key", "id_rsa*", "id_ed25519*", ".npmrc", ".pypirc", ".netrc", ".aws", ".ssh", ".docker", ".kube"];
-/** The settings used when the project has no stillsuit.toml. */
+/** The settings used when the project has no closedbox.toml. */
 export const DEFAULT_FILE_CONFIG = { allow: [], github: false, mask: [], scan: true, memory: "4g", secrets: {} };
 /** Returns the table at a name, or an empty table when the file does not have it. */
 function readTable(table, name) {
@@ -66,7 +66,7 @@ function readSecrets(table) {
     }
     return secrets;
 }
-/** Reads the text of stillsuit.toml into a checked configuration. */
+/** Reads the text of closedbox.toml into a checked configuration. */
 export function readFileConfig(text) {
     const root = parseToml(text);
     const network = readTable(root, "network");
@@ -120,10 +120,10 @@ function writeTomlList(items) {
 function quoteTomlItem(item) {
     return `  ${JSON.stringify(item)},`;
 }
-/** Writes a commented stillsuit.toml that allows the given hosts on top of the agent profile. */
+/** Writes a commented closedbox.toml that allows the given hosts on top of the agent profile. */
 export function writeConfigText(extraHosts, header) {
     return `# ${header}
-# Reference: https://github.com/nukoe-labs/stillsuit#configuration
+# Reference: https://github.com/nukoe-labs/closedbox#settings-optional
 
 [network]
 # Hosts allowed on top of the agent profile and the package registries.
