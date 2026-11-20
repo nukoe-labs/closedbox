@@ -83,7 +83,7 @@ async function preparePlan(context, options) {
     const caFolder = join(context.paths.config, "ca");
     const caPath = await ensureCertificateAuthority(context.runner, caFolder);
     const certificates = await prepareCertificates(context, settings, caFolder);
-    const build = { folder: join(context.paths.cache, "build"), caPath, agentPackages: AGENT_PACKAGES };
+    const build = { folder: join(context.paths.cache, "build"), caPath, agentPackages: AGENT_PACKAGES, user: context.user };
     const agentImage = await ensureAgentImage(context.runner, runtime, build);
     const plan = buildPlan(context, options, settings, agentImage);
     return { plan, runtime, certificates };
@@ -111,6 +111,7 @@ function buildPlan(context, options, settings, agentImage) {
         placeholders: buildPlaceholders(settings, context.environment),
         useTerminal: context.isTerminal,
         homeVolume: homeVolumeName(options.agent, options.projectFolder),
+        user: context.user,
     };
 }
 /** Builds the JSON configuration of the proxy container. */
@@ -146,7 +147,7 @@ function followProxyLogs(watch, resolve, reject) {
 /** Starts the helper that names the process behind a connection, inside the agent container. */
 function startWhois(watch, onAnswer) {
     const agent = sessionNames(watch.plan.id).agent;
-    return watch.context.runner.stream(watch.runtime, ["exec", "-i", "-u", "1000", agent, "node", `${PACKAGE_MOUNT}/bin/whois.js`], onAnswer);
+    return watch.context.runner.stream(watch.runtime, ["exec", "-i", "-u", `${watch.plan.user.uid}`, agent, "node", `${PACKAGE_MOUNT}/bin/whois.js`], onAnswer);
 }
 /** Creates the network and the proxy, and waits until the proxy listens. */
 async function startProxy(watch, mode, certificates) {

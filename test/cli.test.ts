@@ -12,7 +12,7 @@ function createContext(runner = createFakeRunner()): Context & { written: string
   const root = makeTemporaryFolder("cli");
   const written: string[] = [];
   const paths = { config: join(root, "config"), state: join(root, "state"), cache: join(root, "cache"), packageFolder: root };
-  return { runner, environment: {}, paths, write: pushTo.bind(undefined, written), useColor: false, isTerminal: false, written };
+  return { runner, environment: {}, paths, write: pushTo.bind(undefined, written), useColor: false, isTerminal: false, user: { uid: 1000, gid: 1000 }, written };
 }
 
 /** Adds a text to a list. */
@@ -112,12 +112,12 @@ async function runsEachCommand(): Promise<void> {
 
 /** Checks the real context and the real entry point. */
 async function buildsTheRealContext(): Promise<void> {
-  const context = createSystemContext(SYSTEM_RUNNER, { NO_COLOR: "1" }, { input: true, error: true });
+  const context = createSystemContext(SYSTEM_RUNNER, { NO_COLOR: "1" }, { input: true, error: true, user: { uid: 1, gid: 2 } });
   expect(context.useColor).toBe(false);
   expect(context.isTerminal).toBe(true);
-  expect(createSystemContext(SYSTEM_RUNNER, {}, { input: false, error: true }).useColor).toBe(true);
+  expect(createSystemContext(SYSTEM_RUNNER, {}, { input: false, error: true, user: { uid: 1, gid: 2 } }).useColor).toBe(true);
   expect(context.paths.packageFolder).toMatch(/src$/u);
-  await expect(main(["--version"])).resolves.toBe(0);
+  await expect(main(["--version"], { uid: 1, gid: 2 })).resolves.toBe(0);
 }
 
 describe("cli", describeCli);

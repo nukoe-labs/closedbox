@@ -182,7 +182,7 @@ In Dune, the wormsign warns you that a sandworm is coming, and the stillsuit kee
 ## More
 
 - [Audit of existing sandboxes](docs/audit.md): devcontainers, Claude Code sandbox, Codex sandbox, container-use, E2B,
-  Daytona, firejail, bubblewrap, claudebox, leash and others, with their stars and gaps.
+  Daytona, firejail, bubblewrap, claudebox, leash, nono, OneCLI, coop and others, with their stars and gaps.
 - [Why the name](docs/naming.md).
 - [Security policy](SECURITY.md).
 

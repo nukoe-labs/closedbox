@@ -54,7 +54,7 @@ async function buildsTheImageOnlyWhenMissing(): Promise<void> {
   const folder = makeTemporaryFolder("image");
   const caPath = join(folder, "ca.crt");
   writeFileSync(caPath, "CA");
-  const build = { folder: join(folder, "build"), caPath, agentPackages: AGENT_PACKAGES };
+  const build = { folder: join(folder, "build"), caPath, agentPackages: AGENT_PACKAGES, user: { uid: 1001, gid: 121 } };
   const present = createFakeRunner();
   await expect(ensureAgentImage(present, "docker", build)).resolves.toMatch(/^stillsuit-agent:[0-9a-f]{12}$/u);
   expect(present.calls).toHaveLength(1);
@@ -68,9 +68,11 @@ async function buildsTheImageOnlyWhenMissing(): Promise<void> {
 
 /** Checks the Dockerfile with and without agents, and that the tag follows the CA. */
 function writesTheDockerfile(): void {
-  expect(writeDockerfile(AGENT_PACKAGES)).toContain("npm install -g @anthropic-ai/claude-code @openai/codex");
-  expect(writeDockerfile("")).not.toContain("npm install");
-  expect(writeDockerfile("")).toMatch(/FROM node:22-bookworm-slim@sha256:[0-9a-f]{64}/u);
+  const user = { uid: 501, gid: 20 };
+  expect(writeDockerfile(AGENT_PACKAGES, user)).toContain("npm install -g @anthropic-ai/claude-code @openai/codex");
+  expect(writeDockerfile(AGENT_PACKAGES, user)).toContain("usermod -o -u 501 -g 20 node");
+  expect(writeDockerfile("", user)).not.toContain("npm install");
+  expect(writeDockerfile("", user)).toMatch(/FROM node:22-bookworm-slim@sha256:[0-9a-f]{64}/u);
   expect(imageTag("a", "ca1")).not.toBe(imageTag("a", "ca2"));
 }
 

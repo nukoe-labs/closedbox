@@ -6,6 +6,7 @@ import { CONFIG_FILE, writeConfigText } from "./config.js";
 import { PROFILES } from "./profiles.js";
 import type { ProxyMode } from "./proxy.js";
 import { SYSTEM_RUNNER, type Runner } from "./runner.js";
+import type { HostUser } from "./runtime.js";
 import { EXIT_SETUP_FAILED, launch, type Context, type LaunchOptions, type Paths } from "./session.js";
 import { trustConfig } from "./trust.js";
 
@@ -220,22 +221,25 @@ function writeLine(text: string): void {
   process.stderr.write(`${text}\n`);
 }
 
-/** Tells which standard streams are attached to a terminal. */
-export interface Terminals {
+/** What stillsuit reads about the computer it runs on: the terminals and the user. */
+export interface Host {
+  /** Tells whether the standard input is a terminal. */
   input: boolean;
+  /** Tells whether the standard error is a terminal. */
   error: boolean;
+  user: HostUser;
 }
 
 /** Builds the real context: real programs, real folders, the real terminal. */
-export function createSystemContext(runner: Runner, environment: NodeJS.ProcessEnv, terminals: Terminals): Context {
+export function createSystemContext(runner: Runner, environment: NodeJS.ProcessEnv, host: Host): Context {
   const packageFolder = dirname(fileURLToPath(import.meta.url));
-  const useColor = terminals.error && (environment.NO_COLOR ?? "") === "";
-  const isTerminal = terminals.input;
-  return { runner, environment, paths: resolvePaths(environment, homedir(), packageFolder), write: writeLine, useColor, isTerminal };
+  const useColor = host.error && (environment.NO_COLOR ?? "") === "";
+  const isTerminal = host.input;
+  return { runner, environment, paths: resolvePaths(environment, homedir(), packageFolder), write: writeLine, useColor, isTerminal, user: host.user };
 }
 
-/** Starts stillsuit from the command line. */
-export function main(argumentsList: string[]): Promise<number> {
-  const terminals = { input: process.stdin.isTTY === true, error: process.stderr.isTTY === true };
-  return run(argumentsList, createSystemContext(SYSTEM_RUNNER, process.env, terminals), process.cwd());
+/** Starts stillsuit from the command line, as the given user of the computer. */
+export function main(argumentsList: string[], user: HostUser): Promise<number> {
+  const host = { input: process.stdin.isTTY === true, error: process.stderr.isTTY === true, user };
+  return run(argumentsList, createSystemContext(SYSTEM_RUNNER, process.env, host), process.cwd());
 }

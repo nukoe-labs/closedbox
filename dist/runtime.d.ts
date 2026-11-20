@@ -16,6 +16,11 @@ export declare const CA_IN_IMAGE = "/usr/local/share/ca-certificates/stillsuit.c
 export declare const BLACKHOLE_DNS = "192.0.2.1";
 /** Finds a container engine: the one asked for, or Docker then Podman. Apple container has no internal network yet. */
 export declare function detectRuntime(runner: Runner, wanted: string): Promise<RuntimeName>;
+/** A user and group number on the computer. */
+export interface HostUser {
+    uid: number;
+    gid: number;
+}
 /** The names and settings of one session. */
 export interface SessionPlan {
     id: string;
@@ -31,6 +36,8 @@ export interface SessionPlan {
     /** The environment variables given to the agent with a placeholder value, by name. */
     placeholders: Record<string, string>;
     useTerminal: boolean;
+    /** The user of the person on the computer, so that the agent can read and write the project files. */
+    user: HostUser;
     /** The volume kept as the home folder of the agent, one per agent and per project, so that projects never share it. */
     homeVolume: string;
 }

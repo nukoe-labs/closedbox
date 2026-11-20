@@ -9,7 +9,8 @@ export const PACKAGE_MOUNT = "/opt/stillsuit";
 export const CA_IN_IMAGE = "/usr/local/share/ca-certificates/stillsuit.crt";
 /** An address reserved for documentation (RFC 5737): DNS queries sent there go nowhere. */
 export const BLACKHOLE_DNS = "192.0.2.1";
-const AGENT_USER = "1000:1000";
+/** The user of the proxy container, which reads no file of the person. */
+const PROXY_USER = "1000:1000";
 /** Finds a container engine: the one asked for, or Docker then Podman. Apple container has no internal network yet. */
 export async function detectRuntime(runner, wanted) {
     const candidates = wanted === "podman" || wanted === "docker" ? [wanted] : ["docker", "podman"];
@@ -35,7 +36,7 @@ export function buildNetworkArguments(plan) {
 export function buildProxyArguments(plan) {
     const names = sessionNames(plan.id);
     const secretArguments = Object.keys(plan.settings.secrets).flatMap(toEnvironmentArgument);
-    const limits = ["--memory", "256m", "--pids-limit", "256", "--read-only", "--user", AGENT_USER];
+    const limits = ["--memory", "256m", "--pids-limit", "256", "--read-only", "--user", PROXY_USER];
     const mount = ["-v", `${plan.packageFolder}:${PACKAGE_MOUNT}:ro`];
     const labels = ["--label", `stillsuit.session=${plan.id}`];
     const environment = ["-e", "STILLSUIT_PROXY_CONFIG", ...secretArguments];
@@ -88,7 +89,7 @@ export function buildAgentArguments(plan) {
     const names = sessionNames(plan.id);
     const terminal = plan.useTerminal ? ["-it"] : ["-i"];
     const network = ["--network", names.network, "--dns", BLACKHOLE_DNS, "--hostname", "stillsuit"];
-    const limits = ["--memory", plan.settings.memory, "--pids-limit", "4096", "--user", AGENT_USER];
+    const limits = ["--memory", plan.settings.memory, "--pids-limit", "4096", "--user", `${plan.user.uid}:${plan.user.gid}`];
     const mounts = ["-v", `${plan.projectFolder}:${WORKSPACE}`, "-w", WORKSPACE, "-v", `${plan.homeVolume}:/home/node`, "-v", `${plan.packageFolder}:${PACKAGE_MOUNT}:ro`];
     const maskMounts = plan.masks.filter(isMountablePath).flatMap(buildMaskArguments);
     const environment = Object.keys(buildAgentEnvironment(plan)).flatMap(toEnvironmentArgument);
