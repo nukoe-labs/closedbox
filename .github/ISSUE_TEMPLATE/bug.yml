@@ -1,0 +1,18 @@
+name: Bug
+description: stillsuit does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected, and what you got. Remove any secret first.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Output of `stillsuit --version`, `node --version` and `docker version --format '{{.Server.Version}}'`.
+    validations:
+      required: true

@@ -1,0 +1,35 @@
+name: Escape tests
+
+# Each push starts a real sandbox and tries 30 ways out of it. The job fails if one of them works.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1"
+
+permissions: {}
+
+jobs:
+  escape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Try every way out of the sandbox
+        run: npm run escape-tests
+      - name: Trapped repository demonstration
+        run: |
+          bash demo/run-demo.sh 2>&1 | tee demo.log
+          grep -q "WS001" demo.log
+          grep -q "BLOCKED  exfil.stillsuit-demo.example:443" demo.log

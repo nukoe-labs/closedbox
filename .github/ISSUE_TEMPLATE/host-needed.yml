@@ -1,0 +1,17 @@
+name: A host my agent needs
+description: An agent or a common tool needs a host that the default profile blocks.
+labels: [profile]
+body:
+  - type: input
+    id: host
+    attributes:
+      label: Host and port
+      placeholder: statsig.anthropic.com:443
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Which agent or tool calls it, and a public source that documents it
+    validations:
+      required: true
