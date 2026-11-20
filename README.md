@@ -1,70 +1,88 @@
 # stillsuit
 
-**Run Claude Code or Codex in a container with one command. The network is closed except for an allowlist you can
-read, your API keys never enter the container, and every blocked connection is named with the process that tried it.**
+**stillsuit runs your AI coding assistant (Claude Code or Codex) in a closed box.**
+Inside the box, the assistant sees only your project folder, can only reach the websites you approve, and never
+sees your API keys. If something in the project tries to send your data away, stillsuit blocks it and tells you
+which program tried.
 
 [![CI](https://github.com/nukoe-labs/stillsuit/actions/workflows/ci.yml/badge.svg)](https://github.com/nukoe-labs/stillsuit/actions/workflows/ci.yml)
 [![Escape tests](https://github.com/nukoe-labs/stillsuit/actions/workflows/escape.yml/badge.svg)](https://github.com/nukoe-labs/stillsuit/actions/workflows/escape.yml)
 ![coverage 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)
 ![license MIT](https://img.shields.io/badge/license-MIT-blue)
 
+## Start in 30 seconds
+
+You need [Node.js](https://nodejs.org) 20 or later and [Docker](https://www.docker.com/products/docker-desktop/)
+(or Podman, OrbStack, Colima, Rancher Desktop), running.
+
 ```sh
+cd my-project
 npx github:nukoe-labs/stillsuit claude
 ```
+
+That is all. The first start takes about a minute, to prepare the box. Then Claude Code opens as usual, inside it.
+Use `codex` instead of `claude` for Codex.
 
 ![A trapped repository: wormsign flags its SessionStart hook, then stillsuit blocks the exfiltration and names the process](docs/demo.gif)
 
 *A harmless trapped repository: wormsign flags its SessionStart hook; when the hook runs anyway, stillsuit blocks the
 connection and names the process. Reproduce it with `bash demo/run-demo.sh`.*
 
-## Why
+## Why use it
 
-In November 2026, the Mini Shai-Hulud and Miasma worms spread through repositories that start a script **as soon as
-an agent opens the folder**: a `SessionStart` hook in `.claude/settings.json`, a `folderOpen` task in
-`.vscode/tasks.json`. The script reads `~/.npmrc`, `~/.ssh`, cloud credentials and the AI API key from the
-environment, then sends them out. Opening a repository became running it.
+Some repositories hide a script that starts **as soon as an AI assistant opens the folder**. It reads your SSH
+keys, your npm token, your cloud passwords and your AI API key, and sends them to a stranger. In November 2026, the
+Mini Shai-Hulud and Miasma worms spread this way. With stillsuit, opening an unknown repository is safe again.
 
-stillsuit makes "open this repository with my agent" safe by default:
-
-| | Plain `claude` | `stillsuit claude` |
+| | `claude` alone | `stillsuit claude` |
 |---|---|---|
-| Files the agent can read | your whole home folder | the project folder only, without `.env`, keys and cloud folders |
-| Network | anywhere | the allowlist only (Anthropic API, package registries), through a proxy |
-| Your `ANTHROPIC_API_KEY` | in the agent's environment | outside; the proxy adds it to requests to `api.anthropic.com` only |
-| A planted script calls `evil.example` | it works, silently | `BLOCKED  evil.example:443  (by node scripts/setup.js)` |
-| A trapped repository | the hook runs at once | wormsign finds it first and the agent does not start |
-| `docker.sock`, `sudo`, capabilities | yours | none |
+| What the assistant can read | your whole computer | this project folder only, without `.env` files and keys |
+| Where it can connect | anywhere on the internet | only the AI service and the package stores (npm, PyPI…) |
+| Your API key | visible to the assistant | kept outside the box, added on the way out |
+| A hidden script sends your data to `evil.example` | it works, and you never know | blocked: `BLOCKED  evil.example:443  (by node scripts/setup.js)` |
+| A trapped repository | the trap runs at once | found before the start, and the assistant does not open |
 
-## Install and run
-
-You need Node.js 20 or later and Docker (Docker Desktop, OrbStack, Colima, Rancher Desktop) or Podman.
-
-```sh
-cd some-repository-you-did-not-write
-npx github:nukoe-labs/stillsuit claude            # Claude Code
-npx github:nukoe-labs/stillsuit codex             # Codex
-npx github:nukoe-labs/stillsuit shell -- npm test # any command
-```
-
-The first run builds a local image with Claude Code and Codex (about a minute). Arguments after the agent name go to
-the agent: `stillsuit claude --dangerously-skip-permissions` is now a reasonable thing to type.
+## Every command
 
 | Command | What it does |
 |---|---|
-| `stillsuit <agent> [args]` | start `claude`, `codex` or `shell` in the sandbox |
-| `stillsuit audit <agent>` | let everything through once, then write `stillsuit.audit.toml` with every host seen |
-| `stillsuit init` | write a commented `stillsuit.toml` |
-| `stillsuit trust` | show and approve the `stillsuit.toml` of this folder |
-| `stillsuit watch` | follow the journal of the running session in another terminal |
-| `stillsuit clean` | remove containers and networks left by a crash |
+| `stillsuit claude` | open Claude Code in the box |
+| `stillsuit codex` | open Codex in the box |
+| `stillsuit shell -- npm test` | run any command in the box |
+| `stillsuit audit claude` | run once with every website allowed, then list the ones your project used |
+| `stillsuit init` | create a settings file, `stillsuit.toml`, in this folder |
+| `stillsuit trust` | read and approve the settings file of this folder |
+| `stillsuit watch` | show each connection live, in another terminal |
+| `stillsuit clean` | remove what a crash left behind |
+| `stillsuit --help` | show this list |
 
-Options: `--allow <host>` (repeatable), `--no-scan`, `--live` (journal on this terminal), `--runtime docker|podman`,
-`--project <folder>`.
+Options:
 
-## The journal
+| Option | What it does |
+|---|---|
+| `--allow <website>` | allow one more website for this run, for example `--allow api.stripe.com` |
+| `--project <folder>` | use this folder instead of the current one |
+| `--live` | also show each connection in this terminal |
+| `--no-scan` | skip the check for trapped files before the start |
+| `--runtime docker` or `--runtime podman` | choose the container tool (default: the one that is running) |
 
-Every connection goes through the proxy, which writes one line per decision (example below, process names shortened). stillsuit finds the process that opened
-the connection from inside the container (`/proc/net/tcp`, then the socket owner):
+Anything after the assistant's name goes to the assistant: `stillsuit claude --model opus` works as usual.
+
+## My project needs another website
+
+When stillsuit blocks a website your project really needs, it says so at the end, with the command to allow it:
+
+```text
+stillsuit: blocked 1 website(s): api.stripe.com
+To allow one next time: stillsuit claude --allow api.stripe.com
+```
+
+To allow it every time, list it in a `stillsuit.toml` file (see [Settings](#settings-optional)).
+
+## See every connection
+
+stillsuit writes one line for each connection the assistant tries, with the program behind it. `allowed` means it
+went through, `secret` means your API key was added on the way out, `BLOCKED` means it was stopped:
 
 ```text
 allowed  registry.npmjs.org:443  (by npm install)
@@ -73,12 +91,17 @@ BLOCKED  evil.example:443  (by node scripts/setup.js)  [not in the allowlist]
 BLOCKED  169.254.169.254:80  (by curl -s http://169.254.169.254/latest/meta-data/)  [not in the allowlist]
 ```
 
-`stillsuit watch` follows it live in another terminal; the summary is printed when the agent ends.
+Run `stillsuit watch` in another terminal to follow it live. A short summary is shown when the assistant stops.
 
-## Configuration
+## Settings (optional)
 
-Nothing is required. To add hosts for a project, run `stillsuit audit claude`, use the project normally, then read
-`stillsuit.audit.toml` and rename it `stillsuit.toml`:
+You do not need any settings. To let a project reach more websites every time, the easiest way is:
+
+1. run `stillsuit audit claude` and use your project as usual: every website is allowed and written down;
+2. open the `stillsuit.audit.toml` file it creates, and remove any website you do not trust;
+3. rename it `stillsuit.toml`.
+
+A full settings file looks like this:
 
 ```toml
 [network]
@@ -161,7 +184,7 @@ is unreachable:
 
 The unit tests cover 100 % of lines, branches and functions, including the proxy with real TLS servers.
 
-## Limits, said plainly
+## What stillsuit does not do
 
 - A container shares the host kernel: a kernel exploit escapes it. A micro-VM is stronger.
 - The allowlist decides **where** data can go, not **what** goes there. A host that accepts uploads can carry data out

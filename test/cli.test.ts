@@ -1,7 +1,7 @@
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { cleanLeftovers, createSystemContext, initConfig, main, parseCommandLine, resolvePaths, run, trustProjectConfig, USAGE, VERSION, watchJournal } from "../src/cli.js";
+import { cleanLeftovers, createSystemContext, initConfig, main, parseCommandLine, resolvePaths, run, trustProjectConfig, HELP_HINT, USAGE, VERSION, watchJournal } from "../src/cli.js";
 import { SYSTEM_RUNNER } from "../src/runner.js";
 import type { Context } from "../src/session.js";
 import { isTrusted } from "../src/trust.js";
@@ -33,10 +33,21 @@ function readsTheCommandLine(): void {
 
 /** Checks the refused command lines. */
 function refusesWrongCommandLines(): void {
-  expect(parseCommandLine.bind(undefined, ["cursor"], "/w")).toThrow('Unknown agent "cursor"');
-  expect(parseCommandLine.bind(undefined, ["audit"], "/w")).toThrow('Unknown agent ""');
-  expect(parseCommandLine.bind(undefined, ["claude", "--allow"], "/w")).toThrow("--allow needs a value");
-  expect(parseCommandLine.bind(undefined, ["claude", "--runtime", "--live"], "/w")).toThrow("--runtime needs a value");
+  expect(parseCommandLine.bind(undefined, ["cursor"], "/w")).toThrow('"cursor" is not a stillsuit command. Start with: stillsuit claude, stillsuit codex or stillsuit shell');
+  expect(parseCommandLine.bind(undefined, ["clude"], "/w")).toThrow("Did you mean: stillsuit claude");
+  expect(parseCommandLine.bind(undefined, ["iint"], "/w")).toThrow("Did you mean: stillsuit init");
+  expect(parseCommandLine.bind(undefined, ["audit"], "/w")).toThrow("audit needs an assistant to start, for example: stillsuit audit claude");
+  expect(parseCommandLine.bind(undefined, ["claude", "--allow"], "/w")).toThrow("--allow needs a value, for example: --allow api.stripe.com");
+  expect(parseCommandLine.bind(undefined, ["claude", "--runtime", "--live"], "/w")).toThrow("--runtime needs a value, for example: --runtime docker");
+}
+
+/** Checks that asking for help never runs the command, so that `stillsuit init --help` never writes a file. */
+function showsHelpInsteadOfRunning(): void {
+  expect(parseCommandLine(["init", "--help"], "/w").command).toBe("help");
+  expect(parseCommandLine(["clean", "-h"], "/w").command).toBe("help");
+  expect(parseCommandLine(["help"], "/w").command).toBe("help");
+  expect(parseCommandLine(["-V"], "/w").command).toBe("version");
+  expect(parseCommandLine(["claude", "--help"], "/w")).toMatchObject({ command: "launch", options: { argumentsList: ["--help"] } });
 }
 
 /** Checks the XDG folders. */
@@ -57,6 +68,7 @@ function initializesAndTrustsTheConfig(): void {
   appendFileSync(configPath, "# changed\n");
   expect(trustProjectConfig(context, project)).toBe(0);
   expect(context.written.join("\n")).toContain("# changed");
+  expect(context.written[0]).toContain("Create one with: stillsuit init");
 }
 
 /** Checks the removal of leftovers, with and without containers. */
@@ -91,7 +103,7 @@ async function followsTheJournal(): Promise<void> {
   writeFileSync(logPath, "first\nsecond\n");
   await wait(200);
   watcher?.stop();
-  expect(context.written).toEqual(["No session yet.", "first", "second"]);
+  expect(context.written).toEqual(["Nothing to watch yet. Start a session first, for example: stillsuit claude", "first", "second"]);
 }
 
 /** Checks that run dispatches each command and turns errors into messages. */
@@ -108,6 +120,7 @@ async function runsEachCommand(): Promise<void> {
   await expect(run(["shell", "--no-scan"], createContext(createFakeRunner({ info: { code: 1 } })), project)).resolves.toBe(2);
   expect(context.written).toContain(VERSION);
   expect(context.written).toContain(USAGE);
+  expect(context.written).toContain(HELP_HINT);
 }
 
 /** Checks the real context and the real entry point. */
@@ -126,6 +139,7 @@ describe("cli", describeCli);
 function describeCli(): void {
   it("reads the command line", readsTheCommandLine);
   it("refuses wrong command lines", refusesWrongCommandLines);
+  it("shows the help instead of running a command", showsHelpInsteadOfRunning);
   it("resolves the folders", resolvesTheFolders);
   it("initializes and trusts the config", initializesAndTrustsTheConfig);
   it("removes leftovers", removesLeftovers);

@@ -9,31 +9,45 @@ import { EXIT_SETUP_FAILED, launch } from "./session.js";
 import { trustConfig } from "./trust.js";
 /** The version printed by --version, kept equal to the one in package.json. */
 export const VERSION = "0.1.0";
-export const USAGE = `stillsuit ${VERSION}: run a coding agent in a container, deny-by-default network, secrets kept outside.
+export const USAGE = `stillsuit ${VERSION}
+Runs your AI coding assistant in a closed box. Inside, it sees only this project folder,
+reaches only the websites you approve, and never sees your API keys.
 
-Usage:
-  stillsuit <agent> [agent arguments]     start claude, codex or shell in the sandbox
-  stillsuit audit <agent>                 let every connection through, then write stillsuit.audit.toml
-  stillsuit init                          write a commented stillsuit.toml in this folder
-  stillsuit trust                         approve the stillsuit.toml of this folder
-  stillsuit watch                         follow the journal of the running session
-  stillsuit clean                         remove containers and networks left by a crash
+Start:
+  stillsuit claude               open Claude Code in the box
+  stillsuit codex                open Codex in the box
+  stillsuit shell -- npm test    run any command in the box
 
-Options (anywhere before --):
-  --allow <host>      allow one more host for this session (repeatable)
-  --no-scan           do not scan the project with wormsign first
-  --live              show the journal on this terminal too
-  --runtime <name>    docker or podman (default: the first one running)
-  --project <folder>  the folder to mount (default: the current folder)
+Set up a project (optional):
+  stillsuit audit claude         run once with every website allowed, then list the ones used
+  stillsuit init                 create a settings file (stillsuit.toml) in this folder
+  stillsuit trust                read and approve the settings file of this folder
 
-Agents: ${Object.keys(PROFILES).join(", ")}. Docs: https://github.com/nukoe-labs/stillsuit`;
+While it runs:
+  stillsuit watch                show each connection live, in another terminal
+  stillsuit clean                remove what a crash left behind
+
+Options:
+  --allow <website>    allow one more website for this run (repeat it for more)
+  --project <folder>   use this folder instead of the current one
+  --live               also show each connection in this terminal
+  --no-scan            skip the check for trapped files before the start
+  --runtime <name>     docker or podman (default: the one that is running)
+
+More help: https://github.com/nukoe-labs/stillsuit`;
+/** The line added under every error, so that the next step is always clear. */
+export const HELP_HINT = "Run `stillsuit --help` to see every command.";
+/** An example value for each option that takes one, shown when the value is missing. */
+const OPTION_EXAMPLES = { "--allow": "api.stripe.com", "--runtime": "docker", "--project": "~/code/my-app" };
 /** The options that take a value, by name. */
 const VALUE_OPTIONS = new Set(["--allow", "--runtime", "--project"]);
 const SIMPLE_COMMANDS = new Set(["init", "trust", "watch", "clean"]);
-/** Reads one option with its value, and returns how many words it used. */
+const HELP_WORDS = new Set(["--help", "-h", "help"]);
+const VERSION_WORDS = new Set(["--version", "-v", "-V"]);
+/** Reads one option with its value, and stops with an example when the value is missing. */
 function readValueOption(reading, name, value) {
     if (value === undefined || value.startsWith("--")) {
-        throw new RangeError(`${name} needs a value.\n\n${USAGE}`);
+        throw new RangeError(`${name} needs a value, for example: ${name} ${OPTION_EXAMPLES[name]}`);
     }
     if (name === "--allow") {
         reading.extraHosts.push(value);
@@ -68,14 +82,56 @@ function readWords(argumentsList, workingFolder) {
     }
     return reading;
 }
+/** Tells whether the person asked for help with a stillsuit command, such as `stillsuit init --help`. */
+function asksForHelp(words) {
+    const [first = "--help", second = ""] = words;
+    const helpWanted = HELP_WORDS.has(first) || (SIMPLE_COMMANDS.has(first) && HELP_WORDS.has(second));
+    return helpWanted;
+}
+/** Returns the position it is given: the first row of the edit count is 0, 1, 2, and so on. */
+function positionOf(_unused, index) {
+    return index;
+}
+/** Counts the letters to change to turn one word into another, to recognize a typing mistake. */
+function countEdits(typed, known) {
+    let previous = Array.from({ length: known.length + 1 }, positionOf);
+    for (const [row, typedLetter] of [...typed].entries()) {
+        previous = nextEditRow(previous, typedLetter, known, row + 1);
+    }
+    return previous[known.length];
+}
+/** Computes one row of the edit count, for one more letter of the typed word. */
+function nextEditRow(previous, typedLetter, known, rowStart) {
+    const row = [rowStart];
+    for (const [column, knownLetter] of [...known].entries()) {
+        const replaceCost = previous[column] + (typedLetter === knownLetter ? 0 : 1);
+        row.push(Math.min(previous[column + 1] + 1, row[column] + 1, replaceCost));
+    }
+    return row;
+}
+/** Explains an unknown first word, suggesting the closest command when it looks like a typing mistake. */
+function describeUnknownWord(word) {
+    const known = [...Object.keys(PROFILES), "audit", ...SIMPLE_COMMANDS];
+    const closest = known.find(isCloseTo.bind(undefined, word));
+    if (closest !== undefined) {
+        return `"${word}" is not a stillsuit command. Did you mean: stillsuit ${closest}`;
+    }
+    return `"${word}" is not a stillsuit command. Start with: stillsuit claude, stillsuit codex or stillsuit shell`;
+}
+/** Tells whether a known command is at most two letters away from the typed word. */
+function isCloseTo(typed, known) {
+    const MAXIMUM_TYPING_MISTAKES = 2;
+    const close = countEdits(typed, known) <= MAXIMUM_TYPING_MISTAKES;
+    return close;
+}
 /** Reads the command line. */
 export function parseCommandLine(argumentsList, workingFolder) {
     const reading = readWords(argumentsList, workingFolder);
-    const [first = "--help", ...rest] = reading.words;
-    if (first === "--help" || first === "-h" || first === "help") {
+    if (asksForHelp(reading.words)) {
         return { command: "help", projectFolder: reading.projectFolder };
     }
-    if (first === "--version" || first === "-v") {
+    const [first = "--help", ...rest] = reading.words;
+    if (VERSION_WORDS.has(first)) {
         return { command: "version", projectFolder: reading.projectFolder };
     }
     if (SIMPLE_COMMANDS.has(first)) {
@@ -83,8 +139,11 @@ export function parseCommandLine(argumentsList, workingFolder) {
     }
     const isAudit = first === "audit";
     const agent = isAudit ? (rest.shift() ?? "") : first;
+    if (isAudit && !(agent in PROFILES)) {
+        throw new RangeError(`audit needs an assistant to start, for example: stillsuit audit claude`);
+    }
     if (!(agent in PROFILES)) {
-        throw new RangeError(`Unknown agent "${agent}".\n\n${USAGE}`);
+        throw new RangeError(describeUnknownWord(agent));
     }
     const mode = isAudit ? "audit" : "enforce";
     const { extraHosts, runtime, projectFolder, scan, liveJournal } = reading;
@@ -101,26 +160,26 @@ export function resolvePaths(environment, home, packageFolder) {
 export function initConfig(context, projectFolder) {
     const configPath = join(projectFolder, CONFIG_FILE);
     if (existsSync(configPath)) {
-        context.write(`${configPath} already exists.`);
+        context.write(`${configPath} already exists. Edit it, then approve it with: stillsuit trust`);
         return 1;
     }
-    const text = writeConfigText([], "stillsuit configuration. Run `stillsuit audit <agent>` to see which hosts your project needs.");
+    const text = writeConfigText([], "stillsuit settings. Run `stillsuit audit claude` to see which websites your project needs.");
     writeFileSync(configPath, text);
     trustConfig(join(context.paths.config, "trusted.json"), projectFolder, text);
-    context.write(`Wrote ${configPath}.`);
+    context.write(`Created ${configPath}. Add websites to it, then approve it with: stillsuit trust`);
     return 0;
 }
 /** Shows the stillsuit.toml of the project, then records that the person approved it. */
 export function trustProjectConfig(context, projectFolder) {
     const configPath = join(projectFolder, CONFIG_FILE);
     if (!existsSync(configPath)) {
-        context.write(`No ${CONFIG_FILE} in ${projectFolder}.`);
+        context.write(`There is no ${CONFIG_FILE} in ${projectFolder}. Create one with: stillsuit init`);
         return 1;
     }
     const text = readFileSync(configPath, "utf8");
     context.write(text);
     trustConfig(join(context.paths.config, "trusted.json"), projectFolder, text);
-    context.write(`Approved ${configPath}. Any later change needs a new approval.`);
+    context.write(`Approved ${configPath}. If it changes, stillsuit will ask you to approve it again.`);
     return 0;
 }
 /** Removes the containers and networks left by a session that crashed. */
@@ -132,14 +191,14 @@ export async function cleanLeftovers(context, runtime) {
         await context.runner.run(engine, ["rm", "-f", ...containerIds]);
     }
     await context.runner.run(engine, ["network", "prune", "-f", "--filter", "label=stillsuit.session"]);
-    context.write(`Removed ${containerIds.length} container(s) and the unused stillsuit networks.`);
+    context.write(`Cleaned up: ${containerIds.length} leftover box(es) removed.`);
     return 0;
 }
 /** Prints the journal of the latest session, then the new lines as they come, until stopped. */
 export function watchJournal(context, intervalMs) {
     const latestPath = join(context.paths.state, "latest");
     if (!existsSync(latestPath)) {
-        context.write("No session yet.");
+        context.write("Nothing to watch yet. Start a session first, for example: stillsuit claude");
         return undefined;
     }
     const logPath = readFileSync(latestPath, "utf8").trim();
@@ -187,6 +246,7 @@ export async function run(argumentsList, context, workingFolder) {
     }
     catch (error) {
         context.write(`stillsuit: ${error.message}`);
+        context.write(HELP_HINT);
         return EXIT_SETUP_FAILED;
     }
 }
