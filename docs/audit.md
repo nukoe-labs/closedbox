@@ -34,22 +34,33 @@ The bar stillsuit sets for itself:
 | [superagent-ai/vibekit](https://github.com/superagent-ai/vibekit) | 1,872 | SDK to run coding agents in sandboxes (cloud providers), with secret redaction in output | Cloud sandbox providers; redaction of output, not keeping the key out of the agent |
 | [agent-infra/sandbox](https://github.com/agent-infra/sandbox) | 6,371 | All-in-one container (browser, shell, VS Code) for agents | Built to give agents tools, not to confine an agent on your repository; no egress allowlist |
 | [superradcompany/microsandbox](https://github.com/superradcompany/microsandbox) | 9,152 | Self-hosted micro-VMs for untrusted code | Strong isolation, but a server and SDK for running code, not a launcher for Claude Code or Codex on a local folder |
+| [nolabs-ai/nono](https://github.com/nolabs-ai/nono) | 5,054 | Landlock (Linux) and Seatbelt (macOS) sandbox with a credential-injecting network proxy | The strongest overlap on keys: it already keeps API keys out of the agent. It is not a container (host kernel, host user, capability rules to write per tool); no scan of the repository before start |
+| [onecli/onecli](https://github.com/onecli/onecli) | 3,647 | Credential vault: an HTTP gateway injects API keys so agents never hold them | Solves the key part only: no sandbox around the agent, no egress allowlist for other hosts |
+| [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) | 21,827 | Sandboxed runtime for autonomous agents governed by declarative YAML policies | A runtime platform with its own policy language, not a one-line launcher for Claude Code or Codex on a local folder |
+| [trailofbits/coop](https://github.com/trailofbits/coop) | 818 | Runs Claude Code and Codex in disposable microVMs (Firecracker on Linux, Lima on macOS) | Stronger isolation than a container; network allowlisting, key injection and a refusal journal are not its focus |
+| [eugene1g/agent-safehouse](https://github.com/eugene1g/agent-safehouse) | 2,152 | macOS `sandbox-exec` profiles for coding agents, deny first | macOS only, host kernel and user; keys stay in the agent |
+| [pipelab-org/pipelock](https://github.com/pipelab-org/pipelock) | 1,010 | Egress proxy with DLP scanning, SSRF protection and MCP response scanning | An egress layer to wire around your own agent setup, not a launcher that confines the agent |
 | [textcortex/claude-code-sandbox](https://github.com/textcortex/claude-code-sandbox) | 324 (archived) | Claude Code in Docker containers | Archived |
 
-## What nobody does in one command
+## Where stillsuit stands
 
-- **Keeping the API key out of the agent.** Every launcher above passes the key or OAuth token into the agent
-  process, where a malicious `postinstall` can read it from the environment. stillsuit gives the agent a placeholder,
-  and its proxy writes the real key into the request only when it goes to the key's own host. It also removes any
-  other credential header there, so a planted script cannot spend tokens on an attacker's account through an allowed host.
-- **Naming the process behind a refused connection.** "Blocked: evil.example:443 (by node scripts/setup.js)" turns a
-  silent firewall drop into something a person can act on.
-- **An allowlist written from what the project really needs.** `stillsuit audit claude` lets everything through once,
-  then writes `stillsuit.audit.toml` with the hosts seen, to read and approve.
-- **Refusing a repository's own configuration until approved.** A trapped repository can ship a `stillsuit.toml` that
+Each piece exists somewhere: nono and OneCLI keep keys out of the agent, the Claude Code devcontainer and claudebox
+filter egress, coop and microsandbox isolate harder with microVMs. What stillsuit adds is the combination, in one
+`npx` command, for any agent, with Docker or Podman:
+
+- **A container on a network with no route out**, whose only exit is an allowlist proxy, so a planted script cannot
+  bypass the proxy by ignoring `HTTPS_PROXY`.
+- **The key outside the container**: the agent gets a placeholder; the proxy writes the real key only towards its own
+  host, and removes any other credential header there, so a planted script cannot spend tokens on an attacker's
+  account through an allowed host.
+- **A refusal journal that names the process**: "BLOCKED evil.example:443 (by node scripts/setup.js)".
+- **An allowlist written from what the project really needs**: `stillsuit audit claude` lets everything through once,
+  then writes `stillsuit.audit.toml` with the hosts seen.
+- **A repository's own configuration refused until approved**: a trapped repository can ship a `stillsuit.toml` that
   allows its exfiltration host; stillsuit refuses any new or changed file until `stillsuit trust`.
-- **Scanning before the first prompt.** SessionStart hooks run as soon as the agent opens the folder; stillsuit runs
+- **A scan before the first prompt**: SessionStart hooks run as soon as the agent opens the folder, so stillsuit runs
   the wormsign rules on the folder first and does not start on a worm sign.
+- **Escape tests in CI**: 30 attempts against a real sandbox on every push.
 
 ## Honest limits of stillsuit
 
