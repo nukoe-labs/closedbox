@@ -11,7 +11,7 @@ import { getProfile } from "./profiles.js";
 import type { CertificatePair, ProxyMode, ProxyPolicy } from "./proxy.js";
 import type { ProxyConfiguration } from "./proxy-main.js";
 import type { LineStream, Runner } from "./runner.js";
-import { buildAgentArguments, buildAgentEnvironment, buildConnectArguments, buildNetworkArguments, buildProxyArguments, detectRuntime, PACKAGE_MOUNT, sessionNames, type RuntimeName, type SessionPlan } from "./runtime.js";
+import { buildAgentArguments, buildAgentEnvironment, buildConnectArguments, buildNetworkArguments, buildProxyArguments, detectRuntime, PACKAGE_MOUNT, sessionNames, type HostUser, type RuntimeName, type SessionPlan } from "./runtime.js";
 import { scanProject } from "./scan.js";
 import { isTrusted } from "./trust.js";
 
@@ -41,6 +41,8 @@ export interface Context {
   write: (text: string) => void;
   useColor: boolean;
   isTerminal: boolean;
+  /** The user of the person on the computer. */
+  user: HostUser;
 }
 
 /** What the person asked for on the command line. */
@@ -133,7 +135,7 @@ async function preparePlan(context: Context, options: LaunchOptions): Promise<Pr
   const caFolder = join(context.paths.config, "ca");
   const caPath = await ensureCertificateAuthority(context.runner, caFolder);
   const certificates = await prepareCertificates(context, settings, caFolder);
-  const build = { folder: join(context.paths.cache, "build"), caPath, agentPackages: AGENT_PACKAGES };
+  const build = { folder: join(context.paths.cache, "build"), caPath, agentPackages: AGENT_PACKAGES, user: context.user };
   const agentImage = await ensureAgentImage(context.runner, runtime, build);
   const plan = buildPlan(context, options, settings, agentImage);
   return { plan, runtime, certificates };
@@ -163,6 +165,7 @@ function buildPlan(context: Context, options: LaunchOptions, settings: SessionSe
     placeholders: buildPlaceholders(settings, context.environment),
     useTerminal: context.isTerminal,
     homeVolume: homeVolumeName(options.agent, options.projectFolder),
+    user: context.user,
   };
 }
 
@@ -211,7 +214,7 @@ function followProxyLogs(watch: ProxyWatch, resolve: (stream: LineStream) => voi
 /** Starts the helper that names the process behind a connection, inside the agent container. */
 function startWhois(watch: ProxyWatch, onAnswer: (line: string) => void): LineStream {
   const agent = sessionNames(watch.plan.id).agent;
-  return watch.context.runner.stream(watch.runtime, ["exec", "-i", "-u", "1000", agent, "node", `${PACKAGE_MOUNT}/bin/whois.js`], onAnswer);
+  return watch.context.runner.stream(watch.runtime, ["exec", "-i", "-u", `${watch.plan.user.uid}`, agent, "node", `${PACKAGE_MOUNT}/bin/whois.js`], onAnswer);
 }
 
 /** Creates the network and the proxy, and waits until the proxy listens. */

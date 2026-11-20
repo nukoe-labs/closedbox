@@ -1,7 +1,7 @@
 import { type FileConfig } from "./config.js";
 import type { CertificatePair, ProxyMode } from "./proxy.js";
 import type { Runner } from "./runner.js";
-import { type SessionPlan } from "./runtime.js";
+import { type HostUser, type SessionPlan } from "./runtime.js";
 /** The exit code when wormsign found a worm sign and the agent was not started. */
 export declare const EXIT_WORM_FOUND = 3;
 /** The exit code when the session could not start. */
@@ -26,6 +26,8 @@ export interface Context {
     write: (text: string) => void;
     useColor: boolean;
     isTerminal: boolean;
+    /** The user of the person on the computer. */
+    user: HostUser;
 }
 /** What the person asked for on the command line. */
 export interface LaunchOptions {

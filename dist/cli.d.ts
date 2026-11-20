@@ -1,4 +1,5 @@
 import { type Runner } from "./runner.js";
+import type { HostUser } from "./runtime.js";
 import { type Context, type LaunchOptions, type Paths } from "./session.js";
 /** The version printed by --version, kept equal to the one in package.json. */
 export declare const VERSION = "0.1.0";
@@ -27,12 +28,15 @@ export declare function watchJournal(context: Context, intervalMs: number): {
 } | undefined;
 /** Runs stillsuit with a context, writes errors as messages and returns the exit code. */
 export declare function run(argumentsList: string[], context: Context, workingFolder: string): Promise<number>;
-/** Tells which standard streams are attached to a terminal. */
-export interface Terminals {
+/** What stillsuit reads about the computer it runs on: the terminals and the user. */
+export interface Host {
+    /** Tells whether the standard input is a terminal. */
     input: boolean;
+    /** Tells whether the standard error is a terminal. */
     error: boolean;
+    user: HostUser;
 }
 /** Builds the real context: real programs, real folders, the real terminal. */
-export declare function createSystemContext(runner: Runner, environment: NodeJS.ProcessEnv, terminals: Terminals): Context;
-/** Starts stillsuit from the command line. */
-export declare function main(argumentsList: string[]): Promise<number>;
+export declare function createSystemContext(runner: Runner, environment: NodeJS.ProcessEnv, host: Host): Context;
+/** Starts stillsuit from the command line, as the given user of the computer. */
+export declare function main(argumentsList: string[], user: HostUser): Promise<number>;

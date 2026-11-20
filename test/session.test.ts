@@ -41,7 +41,7 @@ function createContext(runner: Runner, environment: NodeJS.ProcessEnv, isTermina
   const root = makeTemporaryFolder("session");
   const written: string[] = [];
   const paths = { config: join(root, "config"), state: join(root, "state"), cache: join(root, "cache"), packageFolder: "/pkg/dist" };
-  return { runner, environment, paths, write: pushTo.bind(undefined, written), useColor: false, isTerminal, written };
+  return { runner, environment, paths, write: pushTo.bind(undefined, written), useColor: false, isTerminal, user: { uid: 1001, gid: 121 }, written };
 }
 
 /** Adds a text to a list. */
@@ -191,14 +191,14 @@ async function detectsTheEngine(): Promise<void> {
 /** Builds a plan for the argument tests. */
 function createPlan(overrides: Partial<SessionPlan>): SessionPlan {
   const settings = resolveSettings(getProfile("claude"), DEFAULT_FILE_CONFIG, [], { ANTHROPIC_API_KEY: "k" });
-  return { id: "abcd", projectFolder: "/p", packageFolder: "/pkg", agentImage: "img", proxyImage: "proxy", command: "claude", argumentsList: [], settings, masks: [], placeholders: { ANTHROPIC_API_KEY: "ph" }, useTerminal: false, homeVolume: "home", ...overrides };
+  return { id: "abcd", projectFolder: "/p", packageFolder: "/pkg", agentImage: "img", proxyImage: "proxy", command: "claude", argumentsList: [], settings, masks: [], placeholders: { ANTHROPIC_API_KEY: "ph" }, useTerminal: false, homeVolume: "home", user: { uid: 1001, gid: 121 }, ...overrides };
 }
 
 /** Checks the arguments of both containers: internal network, no privileges, masks and environment by name only. */
 function buildsHardenedArguments(): void {
   const masks = [{ path: ".aws", isFolder: true }, { path: "a,b.pem", isFolder: false }];
   const agent = buildAgentArguments(createPlan({ masks, useTerminal: true }));
-  expect(agent).toEqual(expect.arrayContaining(["-it", "--network", "stillsuit-net-abcd", "--dns", "192.0.2.1", "--cap-drop", "ALL", "no-new-privileges", "type=tmpfs,destination=/workspace/.aws,tmpfs-size=1m", "home:/home/node"]));
+  expect(agent).toEqual(expect.arrayContaining(["-it", "--network", "stillsuit-net-abcd", "--dns", "192.0.2.1", "--cap-drop", "ALL", "no-new-privileges", "type=tmpfs,destination=/workspace/.aws,tmpfs-size=1m", "home:/home/node", "1001:121"]));
   expect(agent.join(" ")).not.toContain("a,b.pem");
   expect(agent).not.toContain("ph");
   expect(isMountablePath({ path: 'x"y', isFolder: false })).toBe(false);

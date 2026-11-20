@@ -7,13 +7,17 @@ export const AGENT_BASE_IMAGE = "node:22-bookworm-slim@sha256:e9f565d32859f0cbfb
 export const PROXY_IMAGE = "node:22-alpine@sha256:1314fb30ec37592d5845e5a160d522c0e680972aa534549940b8d73bde88481a";
 /** The agents installed in the image. */
 export const AGENT_PACKAGES = "@anthropic-ai/claude-code @openai/codex";
-/** Writes the Dockerfile of the agent image. The agents are installed when the image is built, outside the sandbox. */
-export function writeDockerfile(agentPackages) {
+/**
+ * Writes the Dockerfile of the agent image. The agents are installed when the image is built, outside the sandbox, and
+ * the user of the image takes the numbers of the person, so that the project files keep their owner.
+ */
+export function writeDockerfile(agentPackages, user) {
     const installAgents = agentPackages === "" ? "" : `RUN npm install -g ${agentPackages} && npm cache clean --force\n`;
+    const matchUser = `RUN groupmod -o -g ${user.gid} node && usermod -o -u ${user.uid} -g ${user.gid} node && chown -R node:node /home/node\n`;
     return `FROM ${AGENT_BASE_IMAGE}
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates curl python3 ripgrep procps dnsutils \\
  && rm -rf /var/lib/apt/lists/*
-${installAgents}COPY stillsuit-ca.crt /usr/local/share/ca-certificates/stillsuit.crt
+${installAgents}${matchUser}COPY stillsuit-ca.crt /usr/local/share/ca-certificates/stillsuit.crt
 RUN update-ca-certificates
 USER node
 WORKDIR /workspace
@@ -26,7 +30,7 @@ export function imageTag(dockerfile, caCertificate) {
 }
 /** Builds the agent image when it does not exist yet, and returns its tag. */
 export async function ensureAgentImage(runner, runtime, build) {
-    const dockerfile = writeDockerfile(build.agentPackages);
+    const dockerfile = writeDockerfile(build.agentPackages, build.user);
     const tag = imageTag(dockerfile, readFileSync(build.caPath, "utf8"));
     const inspection = await runner.run(runtime, ["image", "inspect", tag]);
     if (inspection.code === 0) {

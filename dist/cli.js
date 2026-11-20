@@ -195,14 +195,14 @@ function writeLine(text) {
     process.stderr.write(`${text}\n`);
 }
 /** Builds the real context: real programs, real folders, the real terminal. */
-export function createSystemContext(runner, environment, terminals) {
+export function createSystemContext(runner, environment, host) {
     const packageFolder = dirname(fileURLToPath(import.meta.url));
-    const useColor = terminals.error && (environment.NO_COLOR ?? "") === "";
-    const isTerminal = terminals.input;
-    return { runner, environment, paths: resolvePaths(environment, homedir(), packageFolder), write: writeLine, useColor, isTerminal };
+    const useColor = host.error && (environment.NO_COLOR ?? "") === "";
+    const isTerminal = host.input;
+    return { runner, environment, paths: resolvePaths(environment, homedir(), packageFolder), write: writeLine, useColor, isTerminal, user: host.user };
 }
-/** Starts stillsuit from the command line. */
-export function main(argumentsList) {
-    const terminals = { input: process.stdin.isTTY === true, error: process.stderr.isTTY === true };
-    return run(argumentsList, createSystemContext(SYSTEM_RUNNER, process.env, terminals), process.cwd());
+/** Starts stillsuit from the command line, as the given user of the computer. */
+export function main(argumentsList, user) {
+    const host = { input: process.stdin.isTTY === true, error: process.stderr.isTTY === true, user };
+    return run(argumentsList, createSystemContext(SYSTEM_RUNNER, process.env, host), process.cwd());
 }
