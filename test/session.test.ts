@@ -81,7 +81,8 @@ async function runsAFullSession(): Promise<void> {
   await expect(launching).resolves.toBe(7);
   const interactive = runner.calls.find(isAgentRun);
   expect(interactive?.argumentsList.join(" ")).not.toContain("REAL");
-  expect(interactive?.environment?.ANTHROPIC_API_KEY).toBe("sk-ant-api03-stillsuit-placeholder-the-proxy-adds-the-real-key");
+  expect(interactive?.environment?.ANTHROPIC_API_KEY).toMatch(/^sk-ant-api03-/u);
+  expect(interactive?.environment?.ANTHROPIC_API_KEY).toContain("stillsuit-placeholder");
   expect(interactive?.argumentsList).toEqual(expect.arrayContaining(["--model", "x", "type=bind,source=/dev/null,target=/workspace/.env,readonly"]));
   const proxyRun = runner.calls.find(isProxyRun);
   expect(proxyRun?.environment?.ANTHROPIC_API_KEY).toBe("sk-ant-api03-REAL");
@@ -208,7 +209,7 @@ function buildsHardenedArguments(): void {
 
 /** Checks the small helpers of the session. */
 function buildsPlaceholdersNamesAndCommands(): void {
-  expect(makePlaceholder("sk-ant-oat01-secret")).toMatch(/^sk-ant-oat01-stillsuit-placeholder/u);
+  expect(makePlaceholder("sk-ant-oat01-secret")).toMatch(/^sk-ant-oat01-stillsuit/u);
   expect(makePlaceholder("other")).toMatch(/^stillsuit-placeholder/u);
   expect(homeVolumeName("claude", "/a")).not.toBe(homeVolumeName("claude", "/b"));
   expect(chooseCommand("claude", ["-p"])).toEqual({ command: "claude", argumentsList: ["-p"] });

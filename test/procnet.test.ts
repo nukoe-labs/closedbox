@@ -3,7 +3,7 @@ import { findCommandForPort, findSocketInode, readCommand, SYSTEM_PROC, type Pro
 import { answerPortLine } from "../src/whois-main.js";
 
 const HEADER = "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode";
-const TCP = `${HEADER}\n   0: 0200A8C0:9C40 0300A8C0:0C38 01 00000000:00000000 00:00000000 00000000  1000        0 5551 1\n   1: 0200A8C0:9C41 0300A8C0:0C38 06 00000000:00000000 00:00000000 00000000  1000        0 0 1\n`;
+const TCP = `${HEADER}\n   0: 0200A8C0:9C40 0300A8C0:0C38 01 0:0 0:0 0  1000        0 5551 1\n   1: 0200A8C0:9C41 0300A8C0:0C38 06 0:0 0:0 0  1000        0 0 1\n`;
 const TCP6 = `${HEADER}\n   0: 00000000000000000000000000000000:9C42 00000000000000000000000000000000:0C38 01 0 0 0 1000 0 6661 1\n`;
 
 /** Builds a fake /proc with two processes; process 20 holds socket 5551 and 6661. */
