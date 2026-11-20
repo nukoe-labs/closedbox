@@ -11,9 +11,9 @@
 <!-- The commands actually run and their result. -->
 
 ```sh
-npm run typecheck
-npm run lint
-npm run coverage
+pnpm run typecheck
+pnpm run lint
+pnpm run coverage
 ```
 
 ## Risk
