@@ -68,7 +68,8 @@ async function scanBeforeStart(context, options, settings) {
         context.write(outcome.report);
     }
     if (outcome.blocked) {
-        context.write("stillsuit: the agent was not started. Remove the files above, or start with --no-scan if you know why they are there.");
+        context.write("stillsuit: the assistant was not started, because the files above would run on their own.");
+        context.write("Delete them, or start with --no-scan if you know why they are there.");
     }
     return outcome.blocked;
 }
@@ -167,18 +168,21 @@ async function cleanUp(context, runtime, plan) {
 /** Writes the line shown before the agent starts. */
 function writeBanner(context, options, plan, logPath) {
     const secretCount = Object.keys(plan.settings.secrets).length;
-    const mode = options.mode === "audit" ? "AUDIT (everything passes and is recorded)" : "enforce (deny by default)";
-    context.write(`stillsuit: ${options.agent} in ${options.projectFolder}`);
-    context.write(`  network: ${mode}, ${plan.settings.allowRules.length} hosts allowed`);
-    context.write(`  secrets: ${secretCount} injected by the proxy, the agent only sees placeholders`);
-    context.write(`  hidden:  ${plan.masks.length} files or folders of the project, nothing from your home folder`);
-    context.write(`  journal: ${logPath.replace(homedir(), "~")}  (live: stillsuit watch)`);
+    const websites = options.mode === "audit"
+        ? "all allowed for this run, and written down (audit)"
+        : `only the ${plan.settings.allowRules.length} approved ones`;
+    context.write(`stillsuit: starting ${options.agent} in ${options.projectFolder}`);
+    context.write(`  files:     this folder only, without ${plan.masks.length} secret files (.env, keys…)`);
+    context.write(`  websites:  ${websites}`);
+    context.write(`  API keys:  ${secretCount} kept outside the box`);
+    context.write(`  log:       ${logPath.replace(homedir(), "~")}  (follow it live with: stillsuit watch)`);
 }
 /** Writes the summary at the end of the session, and the audit allowlist when in audit mode. */
 function writeSummary(context, options, journal) {
     const blockedHosts = listBlockedHosts(journal.events);
     if (blockedHosts.length > 0) {
-        context.write(`stillsuit: blocked ${blockedHosts.length} host(s): ${blockedHosts.join(", ")}`);
+        context.write(`stillsuit: blocked ${blockedHosts.length} website(s): ${blockedHosts.join(", ")}`);
+        context.write(`To allow one next time: stillsuit ${options.agent} --allow ${blockedHosts[0]}`);
     }
     if (options.mode !== "audit") {
         return;
@@ -186,7 +190,8 @@ function writeSummary(context, options, journal) {
     const auditPath = join(options.projectFolder, "stillsuit.audit.toml");
     const header = "Hosts seen in audit mode. Read each one, remove what you do not trust, then rename this file stillsuit.toml.";
     writeFileSync(auditPath, writeConfigText(listAuditHosts(journal.events), header));
-    context.write(`stillsuit: audit allowlist written to ${auditPath}`);
+    context.write(`stillsuit: the websites used are listed in ${auditPath}`);
+    context.write("Read the list, remove what you do not trust, then rename the file stillsuit.toml.");
 }
 /**
  * Writes one live journal line. The final carriage return brings the cursor back to the first column, because the

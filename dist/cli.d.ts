@@ -3,7 +3,9 @@ import type { HostUser } from "./runtime.js";
 import { type Context, type LaunchOptions, type Paths } from "./session.js";
 /** The version printed by --version, kept equal to the one in package.json. */
 export declare const VERSION = "0.1.0";
-export declare const USAGE: string;
+export declare const USAGE = "stillsuit 0.1.0\nRuns your AI coding assistant in a closed box. Inside, it sees only this project folder,\nreaches only the websites you approve, and never sees your API keys.\n\nStart:\n  stillsuit claude               open Claude Code in the box\n  stillsuit codex                open Codex in the box\n  stillsuit shell -- npm test    run any command in the box\n\nSet up a project (optional):\n  stillsuit audit claude         run once with every website allowed, then list the ones used\n  stillsuit init                 create a settings file (stillsuit.toml) in this folder\n  stillsuit trust                read and approve the settings file of this folder\n\nWhile it runs:\n  stillsuit watch                show each connection live, in another terminal\n  stillsuit clean                remove what a crash left behind\n\nOptions:\n  --allow <website>    allow one more website for this run (repeat it for more)\n  --project <folder>   use this folder instead of the current one\n  --live               also show each connection in this terminal\n  --no-scan            skip the check for trapped files before the start\n  --runtime <name>     docker or podman (default: the one that is running)\n\nMore help: https://github.com/nukoe-labs/stillsuit";
+/** The line added under every error, so that the next step is always clear. */
+export declare const HELP_HINT = "Run `stillsuit --help` to see every command.";
 /** What the command line asks for. */
 export type CommandLine = {
     command: "launch";

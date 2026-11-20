@@ -89,7 +89,7 @@ async function runsAFullSession(): Promise<void> {
   expect(JSON.parse(proxyRun?.environment?.STILLSUIT_PROXY_CONFIG ?? "{}").certificates["api.anthropic.com"].cert).toContain("BEGIN CERTIFICATE");
   expect(listCalls(runner, "run")).toContainEqual(expect.arrayContaining(["network", "rm"]));
   expect(runner.streams[1]?.sent).toEqual(["41000"]);
-  expect(context.written.join("\n")).toContain("blocked 1 host(s): evil.example");
+  expect(context.written.join("\n")).toContain("blocked 1 website(s): evil.example");
   const latest = readFileSync(join(context.paths.state, "latest"), "utf8");
   expect(readFileSync(latest, "utf8")).toContain("BLOCKED  evil.example:443  (by node scripts/setup.js)");
 }
@@ -119,7 +119,8 @@ async function writesTheAuditAllowlist(): Promise<void> {
   await launch(context, createOptions(project, { mode: "audit", agent: "shell", argumentsList: [] }));
   const audit = readFileSync(join(project, "stillsuit.audit.toml"), "utf8");
   expect(audit).toContain('"cdn.example"');
-  expect(context.written.join("\n")).toContain("AUDIT");
+  expect(context.written.join("\n")).toContain("websites:  all allowed for this run, and written down (audit)");
+  expect(context.written.join("\n")).toContain("then rename the file stillsuit.toml");
   expect(context.written).toContain("allowed  cdn.example:443  [audit: not in the allowlist]\r");
 }
 
@@ -132,7 +133,7 @@ async function refusesATrappedProject(): Promise<void> {
   const context = createContext(runner, {});
   await expect(launch(context, createOptions(project))).resolves.toBe(EXIT_WORM_FOUND);
   expect(runner.calls).toEqual([]);
-  expect(context.written.join("\n")).toContain("the agent was not started");
+  expect(context.written.join("\n")).toContain("the assistant was not started");
   await expect(launch(context, createOptions(project, { scan: false }))).resolves.toBe(0);
   const quietProject = makeTemporaryFolder("project");
   writeFileSync(join(quietProject, "stillsuit.toml"), "[scan]\nwormsign = false\n");

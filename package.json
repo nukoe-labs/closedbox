@@ -1,7 +1,7 @@
 {
   "name": "stillsuit",
   "version": "0.1.0",
-  "description": "Run Claude Code or Codex in a container with one command: deny-by-default network with a readable allowlist, API keys injected by a proxy and never seen by the agent, a live journal of every blocked connection, and a wormsign scan before start.",
+  "description": "Run Claude Code or Codex in a closed box: it sees only your project, reaches only the websites you approve, and never sees your API keys.",
   "type": "module",
   "bin": {
     "stillsuit": "./dist/bin/stillsuit.js"
