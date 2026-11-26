@@ -25,6 +25,9 @@ function readPort(text: string, entry: string): number {
 /** Reads one allowlist entry such as "registry.npmjs.org", "*.github.com" or "example.com:8443". */
 export function parseAllowRule(entry: string): AllowRule {
   const lowerEntry = entry.trim().toLowerCase();
+  if (lowerEntry.includes("/")) {
+    throw new RangeError(`"${entry}" is an address: give the host name only, for example example.com.`);
+  }
   const separator = lowerEntry.lastIndexOf(":");
   const hasPort = separator > 0 && !lowerEntry.includes("]");
   const host = hasPort ? lowerEntry.slice(0, separator) : lowerEntry;

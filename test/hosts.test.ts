@@ -12,6 +12,8 @@ function readsAllowRules(): void {
 /** Checks that wrong entries are refused. */
 function refusesWrongRules(): void {
   expect(parseAllowRule.bind(undefined, "exa mple.com")).toThrow("not a host name");
+  expect(parseAllowRule.bind(undefined, "https://example.com/path")).toThrow("is an address: give the host name only");
+  expect(parseAllowRule.bind(undefined, "example.com/path")).toThrow("is an address");
   expect(parseAllowRule.bind(undefined, "example.com:0")).toThrow("wrong port");
   expect(parseAllowRule.bind(undefined, "example.com:70000")).toThrow("wrong port");
   expect(parseAllowRule.bind(undefined, "[::1]:443")).toThrow("not a host name");
