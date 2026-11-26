@@ -67,6 +67,14 @@ interface Reading {
   liveJournal: boolean;
 }
 
+/** Checks that the value of --runtime names a container engine closedbox can use, and returns it. */
+function readRuntimeName(value: string): string {
+  if (value !== "docker" && value !== "podman") {
+    throw new RangeError(`--runtime needs docker or podman, not "${value}".`);
+  }
+  return value;
+}
+
 /** Reads one option with its value, and stops with an example when the value is missing. */
 function readValueOption(reading: Reading, name: string, value: string | undefined): void {
   if (value === undefined || value.startsWith("--")) {
@@ -75,7 +83,7 @@ function readValueOption(reading: Reading, name: string, value: string | undefin
   if (name === "--allow") {
     reading.extraHosts.push(value);
   } else if (name === "--runtime") {
-    reading.runtime = value;
+    reading.runtime = readRuntimeName(value);
   } else {
     reading.projectFolder = resolve(value);
   }

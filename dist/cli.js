@@ -44,6 +44,13 @@ const VALUE_OPTIONS = new Set(["--allow", "--runtime", "--project"]);
 const SIMPLE_COMMANDS = new Set(["init", "trust", "watch", "clean"]);
 const HELP_WORDS = new Set(["--help", "-h", "help"]);
 const VERSION_WORDS = new Set(["--version", "-v", "-V"]);
+/** Checks that the value of --runtime names a container engine closedbox can use, and returns it. */
+function readRuntimeName(value) {
+    if (value !== "docker" && value !== "podman") {
+        throw new RangeError(`--runtime needs docker or podman, not "${value}".`);
+    }
+    return value;
+}
 /** Reads one option with its value, and stops with an example when the value is missing. */
 function readValueOption(reading, name, value) {
     if (value === undefined || value.startsWith("--")) {
@@ -53,7 +60,7 @@ function readValueOption(reading, name, value) {
         reading.extraHosts.push(value);
     }
     else if (name === "--runtime") {
-        reading.runtime = value;
+        reading.runtime = readRuntimeName(value);
     }
     else {
         reading.projectFolder = resolve(value);
