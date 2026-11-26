@@ -39,6 +39,8 @@ function refusesWrongCommandLines(): void {
   expect(parseCommandLine.bind(undefined, ["audit"], "/w")).toThrow("audit needs an assistant to start, for example: closedbox audit claude");
   expect(parseCommandLine.bind(undefined, ["claude", "--allow"], "/w")).toThrow("--allow needs a value, for example: --allow api.stripe.com");
   expect(parseCommandLine.bind(undefined, ["claude", "--runtime", "--live"], "/w")).toThrow("--runtime needs a value, for example: --runtime docker");
+  expect(parseCommandLine.bind(undefined, ["claude", "--runtime", "podamn"], "/w")).toThrow('--runtime needs docker or podman, not "podamn".');
+  expect(parseCommandLine.bind(undefined, ["clean", "--runtime", "nosuchtool"], "/w")).toThrow("--runtime needs docker or podman");
 }
 
 /** Checks that asking for help never runs the command, so that `closedbox init --help` never writes a file. */
