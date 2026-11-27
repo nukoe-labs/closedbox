@@ -53,7 +53,7 @@ function readRuntimeName(value) {
 }
 /** Reads one option with its value, and stops with an example when the value is missing. */
 function readValueOption(reading, name, value) {
-    if (value === undefined || value.startsWith("--")) {
+    if (value === undefined || value === "" || value.startsWith("--")) {
         throw new RangeError(`${name} needs a value, for example: ${name} ${OPTION_EXAMPLES[name]}`);
     }
     if (name === "--allow") {
@@ -66,8 +66,19 @@ function readValueOption(reading, name, value) {
         reading.projectFolder = resolve(value);
     }
 }
+/** Splits `--name=value` into `--name` and `value` for the options that take a value, and keeps every other word. */
+function splitEqualSign(word) {
+    const equalSign = word.indexOf("=");
+    if (equalSign > 0 && VALUE_OPTIONS.has(word.slice(0, equalSign))) {
+        return [word.slice(0, equalSign), word.slice(equalSign + 1)];
+    }
+    return [word];
+}
 /** Reads the words of the command line into options and the remaining words. */
-function readWords(argumentsList, workingFolder) {
+function readWords(rawArguments, workingFolder) {
+    const separator = rawArguments.indexOf("--");
+    const beforeSeparator = separator === -1 ? rawArguments : rawArguments.slice(0, separator);
+    const argumentsList = [...beforeSeparator.flatMap(splitEqualSign), ...rawArguments.slice(beforeSeparator.length)];
     const reading = { words: [], extraHosts: [], runtime: "auto", projectFolder: workingFolder, scan: true, liveJournal: false };
     for (let index = 0; index < argumentsList.length; index += 1) {
         const word = argumentsList[index];

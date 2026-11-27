@@ -28,6 +28,14 @@ function readsTheCommandLine(): void {
   expect(parseCommandLine(["watch"], "/w").command).toBe("watch");
   const launch = parseCommandLine(["claude", "--allow", "a.example", "--dangerously-skip-permissions", "--no-scan", "--live", "--runtime", "podman", "--project", "/tmp/x", "--", "--allow", "b"], "/w");
   expect(launch).toEqual({ command: "launch", options: { agent: "claude", argumentsList: ["--dangerously-skip-permissions", "--allow", "b"], projectFolder: "/tmp/x", mode: "enforce", extraHosts: ["a.example"], scan: false, runtime: "podman", liveJournal: true } });
+  const withEqualSigns = parseCommandLine(["claude", "--allow=a.example", "--runtime=podman", "--project=/tmp/x", "--", "--allow=b"], "/w");
+  expect(withEqualSigns).toEqual({ command: "launch", options: { agent: "claude", argumentsList: ["--allow=b"], projectFolder: "/tmp/x", mode: "enforce", extraHosts: ["a.example"], scan: true, runtime: "podman", liveJournal: false } });
+  expect(parseCommandLine(["--allow=a.example", "shell"], "/w")).toMatchObject({ options: { agent: "shell", extraHosts: ["a.example"] } });
+  expect(parseCommandLine(["shell", "--allow=a=b"], "/w")).toMatchObject({ options: { extraHosts: ["a=b"] } });
+  expect(parseCommandLine.bind(undefined, ["shell", "--allow="], "/w")).toThrow("--allow needs a value");
+  expect(parseCommandLine.bind(undefined, ["shell", "--allow", ""], "/w")).toThrow("--allow needs a value");
+  expect(parseCommandLine.bind(undefined, ["shell", "--runtime=lxc"], "/w")).toThrow("--runtime needs docker or podman");
+  expect(parseCommandLine(["shell", "--live=1"], "/w")).toMatchObject({ options: { argumentsList: ["--live=1"] } });
   expect(parseCommandLine(["audit", "codex"], "/w")).toMatchObject({ options: { agent: "codex", mode: "audit" } });
 }
 
