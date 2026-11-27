@@ -60,7 +60,7 @@ Options:
 
 | Option | What it does |
 |---|---|
-| `--allow <website>` | allow one more website for this run, for example `--allow api.stripe.com` |
+| `--allow <website>` | allow one more website for this run, for example `--allow api.stripe.com` (`--allow=api.stripe.com` works too, as do `--runtime=` and `--project=`) |
 | `--project <folder>` | use this folder instead of the current one |
 | `--live` | also show each connection in this terminal |
 | `--no-scan` | skip the check for trapped files before the start |
