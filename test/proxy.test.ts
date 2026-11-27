@@ -255,11 +255,16 @@ async function tunnelsToAnAllowedHostAndRefusesPrivateAddresses(): Promise<void>
   const refused = await sendConnect(strict.port, `localhost:${state.plainPort}`);
   expect(refused.status).toBe(403);
   expect(strict.events[0]?.reason).toContain("private address");
+  const auditStrict = await startProxy(makePolicy({ mode: "audit", allowPrivate: false }));
+  const longForm = await sendConnect(auditStrict.port, `[0:0:0:0:0:0:0:1]:${state.plainPort}`);
+  expect(longForm.status).toBe(403);
+  expect(auditStrict.events[0]?.reason).toContain("private address");
   const closedPort = await startProxy(makePolicy({ allow: [parseAllowRule("127.0.0.1:1")] }));
   const down = await sendConnect(closedPort.port, "127.0.0.1:1");
   expect(down.status).toBe(502);
   proxy.server.close();
   strict.server.close();
+  auditStrict.server.close();
   closedPort.server.close();
 }
 
