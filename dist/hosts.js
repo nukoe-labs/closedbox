@@ -57,6 +57,15 @@ const PRIVATE_IPV6 = [/^::1?$/u, /^f[cd]/u, /^fe[89ab]/u, /^::ffff:/u];
 function matchesPattern(pattern) {
     return pattern.test(this);
 }
+/** Writes an IPv6 address in its short canonical form, so that 0:0:0:0:0:0:0:1 and ::1 are read the same way. */
+function canonicalIpv6(address) {
+    try {
+        return new URL(`http://[${address}]`).hostname.slice(1, -1);
+    }
+    catch {
+        return address;
+    }
+}
 /**
  * Tells whether an IP address belongs to the computer, the local network or the container network,
  * which the proxy never reaches so that the agent cannot attack local services.
@@ -66,5 +75,5 @@ export function isPrivateAddress(address) {
     if (isIP(lowerAddress) === 4) {
         return PRIVATE_IPV4.some(matchesPattern, lowerAddress);
     }
-    return PRIVATE_IPV6.some(matchesPattern, lowerAddress);
+    return PRIVATE_IPV6.some(matchesPattern, canonicalIpv6(lowerAddress));
 }
