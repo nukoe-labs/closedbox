@@ -126,6 +126,9 @@ header = "authorization"
 template = "Bearer {value}"
 ```
 
+A table or a key that closedbox does not know (`masks` instead of `mask`, for instance) is refused with the list of the
+settings that exist, so that a misspelled setting is never dropped without a word.
+
 **A repository can ship its own `closedbox.toml`** to allow its exfiltration host. closedbox refuses any new or
 changed `closedbox.toml` until you run `closedbox trust`, which shows it first. A file cannot move the keys of the
 built-in profiles to another host.
