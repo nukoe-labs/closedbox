@@ -66,9 +66,42 @@ function readSecrets(table) {
     }
     return secrets;
 }
+/** The tables of closedbox.toml and the settings each one knows; the settings of a [secrets.NAME] table are listed apart. */
+const KNOWN_SETTINGS = {
+    network: ["allow", "github"],
+    files: ["mask"],
+    scan: ["wormsign"],
+    container: ["memory"],
+};
+/** The settings of a [secrets.NAME] table. */
+const SECRET_SETTINGS = ["host", "header", "template"];
+/** Refuses a key that is not one of the known ones, so that a misspelled setting is never dropped without a word. */
+function refuseUnknownKeys(table, knownKeys, place) {
+    const unknownKey = Object.keys(table).find(isNotIn.bind(undefined, knownKeys));
+    if (unknownKey !== undefined) {
+        throw new RangeError(`${CONFIG_FILE}: ${place} has no setting called "${unknownKey}". Known: ${knownKeys.join(", ")}.`);
+    }
+}
+/** Tells whether a key is missing from a list of keys. */
+function isNotIn(keys, key) {
+    return !keys.includes(key);
+}
+/** Refuses every table, key and secret setting that closedbox.toml does not know. */
+function refuseUnknownSettings(root) {
+    refuseUnknownKeys(root, [...Object.keys(KNOWN_SETTINGS), "secrets"], "the file");
+    for (const [name, keys] of Object.entries(KNOWN_SETTINGS)) {
+        refuseUnknownKeys(readTable(root, name), keys, `[${name}]`);
+    }
+    for (const [name, rule] of Object.entries(readTable(root, "secrets"))) {
+        if (typeof rule === "object" && !Array.isArray(rule)) {
+            refuseUnknownKeys(rule, SECRET_SETTINGS, `[secrets.${name}]`);
+        }
+    }
+}
 /** Reads the text of closedbox.toml into a checked configuration. */
 export function readFileConfig(text) {
     const root = parseToml(text);
+    refuseUnknownSettings(root);
     const network = readTable(root, "network");
     const files = readTable(root, "files");
     const scan = readTable(root, "scan");

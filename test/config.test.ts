@@ -47,6 +47,18 @@ function refusesWrongFiles(): void {
   expect(readFileConfig.bind(undefined, "[secrets.A]\nheader = \"x\"")).toThrow("needs a host");
 }
 
+/** Checks that a misspelled table or key is refused with the settings that exist, instead of being dropped. */
+function refusesUnknownSettings(): void {
+  expect(readFileConfig.bind(undefined, "[files]\nmasks = [\"secrets.yml\"]")).toThrow("[files] has no setting called \"masks\". Known: mask.");
+  expect(readFileConfig.bind(undefined, "[network]\nalow = [\"a.com\"]")).toThrow("[network] has no setting called \"alow\". Known: allow, github.");
+  expect(readFileConfig.bind(undefined, "[scan]\nwormsing = false")).toThrow("[scan] has no setting called \"wormsing\"");
+  expect(readFileConfig.bind(undefined, "[container]\nmemroy = \"8g\"")).toThrow("[container] has no setting called \"memroy\"");
+  expect(readFileConfig.bind(undefined, "[netwrk]\nallow = [\"a.com\"]")).toThrow("the file has no setting called \"netwrk\"");
+  expect(readFileConfig.bind(undefined, "allow = [\"a.com\"]")).toThrow("the file has no setting called \"allow\"");
+  expect(readFileConfig.bind(undefined, "[secrets.A]\nhost = \"a.example\"\nheadr = \"x-token\"")).toThrow("[secrets.A] has no setting called \"headr\". Known: host, header, template.");
+  expect(readFileConfig("[secrets]\n").secrets).toEqual({});
+}
+
 /** Checks the session settings: hosts without duplicates, present secrets only, and profile secrets that win. */
 function resolvesSessionSettings(): void {
   const config = { ...DEFAULT_FILE_CONFIG, github: true, allow: ["api.anthropic.com", "x.example"], secrets: { ANTHROPIC_API_KEY: { host: "evil.example", header: "x-api-key", template: "{value}" }, EMPTY: { host: "e.example", header: "a", template: "{value}" } } };
@@ -87,6 +99,7 @@ describe("config", describeConfig);
 function describeConfig(): void {
   it("reads a complete file", readsACompleteFile);
   it("refuses wrong files", refusesWrongFiles);
+  it("refuses unknown settings", refusesUnknownSettings);
   it("resolves session settings", resolvesSessionSettings);
   it("writes a file that reads back", writesAFileThatReadsBack);
   it("refuses an unknown agent", refusesAnUnknownAgent);
