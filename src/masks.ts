@@ -8,11 +8,8 @@ export interface MaskedPath {
   isFolder: boolean;
 }
 
-/** The folders never searched: they are large and are not where secrets are kept by hand. */
-const SKIPPED_FOLDERS = new Set(["node_modules", ".git", "vendor", ".venv", "target", "dist"]);
-
-/** How deep the search goes below the project folder. */
-export const MASK_SEARCH_DEPTH = 4;
+/** The folders never searched: they hold downloaded packages and repository data, not secrets kept by hand. */
+const SKIPPED_FOLDERS = new Set(["node_modules", ".git"]);
 
 /** Turns a pattern with * into a regular expression that matches a whole file name. */
 export function patternToRegExp(pattern: string): RegExp {
@@ -29,13 +26,6 @@ function readEntries(folder: string): Dirent[] {
   }
 }
 
-/** The state shared while searching the project. */
-interface Search {
-  root: string;
-  patterns: RegExp[];
-  found: MaskedPath[];
-}
-
 /** Tells whether a file name matches one of the patterns. */
 function matchesAny(patterns: RegExp[], name: string): boolean {
   return patterns.some(testName, name);
@@ -47,36 +37,45 @@ function testName(this: string, pattern: RegExp): boolean {
 }
 
 /**
- * Looks at one entry: records it when it matches, or searches inside it when it is a folder. A symbolic link is skipped:
- * inside the container it points into the container, never to the files of the computer.
+ * Looks at one entry: records it when it matches, or returns the path of the folder to search next when it is a folder.
+ * A symbolic link is skipped: inside the container it points into the container, never to the files of the computer.
  */
-function visitEntry(search: Search, relativeFolder: string, depth: number, entry: Dirent): void {
+function visitEntry(patterns: RegExp[], found: MaskedPath[], relativeFolder: string, entry: Dirent): string | undefined {
   if (entry.isSymbolicLink()) {
-    return;
+    return undefined;
   }
   const relativePath = relativeFolder === "" ? entry.name : `${relativeFolder}/${entry.name}`;
   const isFolder = entry.isDirectory();
-  if (matchesAny(search.patterns, entry.name)) {
-    search.found.push({ path: relativePath, isFolder });
-    return;
+  if (matchesAny(patterns, entry.name)) {
+    found.push({ path: relativePath, isFolder });
+    return undefined;
   }
-  const mustSearchInside = isFolder && !SKIPPED_FOLDERS.has(entry.name) && depth < MASK_SEARCH_DEPTH;
-  if (mustSearchInside) {
-    searchFolder(search, relativePath, depth + 1);
-  }
+  return isFolder && !SKIPPED_FOLDERS.has(entry.name) ? relativePath : undefined;
 }
 
-/** Searches one folder of the project. Symbolic links are not followed. */
-function searchFolder(search: Search, relativeFolder: string, depth: number): void {
-  const entries = readEntries(join(search.root, relativeFolder));
-  for (const entry of entries) {
-    visitEntry(search, relativeFolder, depth, entry);
-  }
+/** Searches the entries of one folder, records the matching ones and returns the folders to search next. */
+function searchFolder(patterns: RegExp[], found: MaskedPath[], projectFolder: string, relativeFolder: string): string[] {
+  const entries = readEntries(join(projectFolder, relativeFolder));
+  const nextFolders = entries.map(visitEntry.bind(undefined, patterns, found, relativeFolder));
+  return nextFolders.filter(isFolderPath);
 }
 
-/** Finds the files and folders of the project whose name matches one of the mask patterns. */
+/** Tells whether a visit returned the path of a folder to search. */
+function isFolderPath(path: string | undefined): path is string {
+  return path !== undefined;
+}
+
+/**
+ * Finds the files and folders of the project whose name matches one of the mask patterns, at any depth: a secret kept
+ * in a deep folder is as readable as one at the root. The folders are searched one after the other, without recursion,
+ * so that a planted tree of nested folders cannot overflow the stack. Symbolic links are not followed.
+ */
 export function findMaskedPaths(projectFolder: string, patterns: string[]): MaskedPath[] {
-  const search: Search = { root: projectFolder, patterns: patterns.map(patternToRegExp), found: [] };
-  searchFolder(search, "", 1);
-  return search.found;
+  const compiled = patterns.map(patternToRegExp);
+  const found: MaskedPath[] = [];
+  const foldersToSearch = [""];
+  for (const relativeFolder of foldersToSearch) {
+    foldersToSearch.push(...searchFolder(compiled, found, projectFolder, relativeFolder));
+  }
+  return found;
 }
